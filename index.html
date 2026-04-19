@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Rush Hour Puzzle</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,15 +13,25 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    min-height: 100dvh;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     color: #e2e8f0;
     user-select: none;
     -webkit-user-select: none;
+    overscroll-behavior: none;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
   /* ---- Level Select Screen ---- */
   .screen { display: none; }
-  .screen.active { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+  .screen.active {
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+    width: 100%; max-height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 20px 16px;
+  }
 
   .level-grid-title {
     font-size: 32px; font-weight: 800;
@@ -40,7 +50,7 @@
   .difficulty-label.expert { color: #a855f7; }
 
   .level-grid {
-    display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px;
+    display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;
     margin-bottom: 20px;
   }
 
@@ -51,8 +61,12 @@
     background: rgba(255,255,255,0.06); color: #64748b;
     transition: transform 0.1s ease, background 0.15s ease;
     position: relative;
+    min-width: 40px; min-height: 40px;
   }
-  .level-cell:hover { transform: scale(1.1); background: rgba(255,255,255,0.12); }
+  @media (hover: hover) and (pointer: fine) {
+    .level-cell:hover { transform: scale(1.1); background: rgba(255,255,255,0.12); }
+  }
+  .level-cell:active { transform: scale(0.95); background: rgba(255,255,255,0.15); }
   .level-cell.completed { background: rgba(34,197,94,0.15); color: #22c55e; }
   .level-cell.completed::after {
     content: '✓'; position: absolute; top: 1px; right: 3px;
@@ -62,7 +76,7 @@
   .level-cell.locked { opacity: 0.35; cursor: default; }
 
   /* ---- Game Screen ---- */
-  .game-container { gap: 18px; }
+  .game-container { gap: 18px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
   header { text-align: center; }
   header h1 {
@@ -89,11 +103,13 @@
     position: relative; background: #1e293b; border-radius: 16px;
     padding: 12px 56px 12px 12px;
     box-shadow: 0 25px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    touch-action: none;
   }
 
   .board {
     position: relative; width: 360px; height: 360px;
     background: #334155; border-radius: 8px; overflow: hidden;
+    touch-action: none;
   }
 
   .grid-line-h, .grid-line-v { position: absolute; background: rgba(255,255,255,0.04); }
@@ -101,10 +117,10 @@
   .grid-line-v { height: 100%; width: 1px; }
 
   .exit-marker {
-    position: absolute; right: 0; top: calc(12px + 2 * 60px);
-    width: 44px; height: 60px; display: flex; align-items: center; justify-content: center; gap: 2px;
+    position: absolute; right: 0;
+    width: 44px; display: flex; align-items: center; justify-content: center; gap: 2px;
   }
-  .exit-arrow { width: 16px; height: 60px; background: linear-gradient(90deg, transparent, #ef4444); border-radius: 0 4px 4px 0; }
+  .exit-arrow { width: 16px; height: 100%; background: linear-gradient(90deg, transparent, #ef4444); border-radius: 0 4px 4px 0; }
   .exit-label { font-size: 11px; font-weight: 800; color: #ef4444; text-transform: uppercase; letter-spacing: 1px; writing-mode: vertical-lr; text-orientation: mixed; }
 
   /* ---- Vehicle base ---- */
@@ -112,6 +128,7 @@
     position: absolute; border-radius: 12px; cursor: grab;
     transition: box-shadow 0.15s ease, transform 0.1s ease;
     overflow: hidden;
+    touch-action: none;
   }
 
   /* Body shine — glossy highlight across the top */
@@ -246,9 +263,11 @@
   .vehicle.v-vehicle .bumper.rear { top: 2px; }
 
   /* ---- Interaction states ---- */
-  .vehicle:hover {
-    box-shadow: 0 0 0 2px rgba(255,255,255,0.2), 0 8px 20px rgba(0,0,0,0.4);
-    z-index: 5; transform: scale(1.03);
+  @media (hover: hover) and (pointer: fine) {
+    .vehicle:hover {
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.2), 0 8px 20px rgba(0,0,0,0.4);
+      z-index: 5; transform: scale(1.03);
+    }
   }
   .vehicle.dragging {
     cursor: grabbing;
@@ -291,18 +310,24 @@
 
   .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   .btn {
-    padding: 9px 22px; border: none; border-radius: 10px;
+    padding: 12px 22px; border: none; border-radius: 10px;
     font-size: 14px; font-weight: 600; cursor: pointer;
     transition: transform 0.1s ease, box-shadow 0.1s ease;
+    min-height: 44px;
   }
-  .btn:hover { transform: translateY(-1px); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover { transform: translateY(-1px); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+    .btn-hint:hover { background: rgba(251,191,36,0.25); }
+    .btn-solve:hover { background: rgba(34,197,94,0.25); }
+  }
   .btn:active { transform: translateY(0); }
   .btn-secondary { background: rgba(255,255,255,0.08); color: #e2e8f0; }
-  .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+  .btn-secondary:active { background: rgba(255,255,255,0.16); }
   .btn-hint { background: rgba(251,191,36,0.15); color: #fbbf24; }
-  .btn-hint:hover { background: rgba(251,191,36,0.25); }
+  .btn-hint:active { background: rgba(251,191,36,0.3); }
   .btn-solve { background: rgba(34,197,94,0.15); color: #22c55e; }
-  .btn-solve:hover { background: rgba(34,197,94,0.25); }
+  .btn-solve:active { background: rgba(34,197,94,0.3); }
 
   .overlay {
     position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -321,7 +346,9 @@
     box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.1s ease;
     text-transform: uppercase; letter-spacing: 0.5px;
   }
-  .win-btn:hover { transform: translateY(-2px); }
+  @media (hover: hover) and (pointer: fine) {
+    .win-btn:hover { transform: translateY(-2px); }
+  }
   .win-btn:active { transform: translateY(0); }
   .win-btn-primary { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0f172a; }
   .win-btn-secondary { background: rgba(255,255,255,0.1); color: #e2e8f0; }
@@ -376,8 +403,8 @@
     transition: left 0.6s cubic-bezier(0.4,0,0.2,1), top 0.6s cubic-bezier(0.4,0,0.2,1);
   }
   .welcome-board .demo-exit {
-    position: absolute; right: 0; top: calc(2 * 40px);
-    width: 6px; height: 40px; background: linear-gradient(90deg, transparent, #ef4444);
+    position: absolute; right: 0;
+    width: 6px; background: linear-gradient(90deg, transparent, #ef4444);
     border-radius: 0 3px 3px 0;
   }
   .welcome-board .demo-gridline-h, .welcome-board .demo-gridline-v {
@@ -404,14 +431,339 @@
     box-shadow: 0 8px 30px rgba(239,68,68,0.3);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
-  .play-btn:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 12px 40px rgba(239,68,68,0.4);
+  @media (hover: hover) and (pointer: fine) {
+    .play-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 12px 40px rgba(239,68,68,0.4);
+    }
   }
   .play-btn:active { transform: translateY(0) scale(0.98); }
 
   .welcome-footer {
     font-size: 12px; color: #475569; margin-top: 8px;
+  }
+
+  /* ---- Auth Screen ---- */
+  .auth-screen { position: relative; overflow: hidden; }
+  .auth-screen .welcome-bg { position: absolute; inset: 0; z-index: 0; }
+  .auth-card {
+    position: relative; z-index: 1; width: 100%; max-width: 400px;
+    background: rgba(30,41,59,0.85); backdrop-filter: blur(20px);
+    border-radius: 20px; padding: 36px 28px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.06);
+    animation: welcomeFadeIn 0.5s ease-out;
+  }
+  .auth-title {
+    font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 4px;
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .auth-subtitle { text-align: center; color: #64748b; font-size: 14px; margin-bottom: 24px; }
+
+  .auth-tabs {
+    display: flex; margin-bottom: 24px; background: rgba(0,0,0,0.2);
+    border-radius: 12px; padding: 3px;
+  }
+  .auth-tab {
+    flex: 1; padding: 10px; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    background: transparent; color: #64748b; transition: all 0.2s ease;
+  }
+  .auth-tab.active { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+
+  .auth-field { margin-bottom: 16px; }
+  .auth-field label {
+    display: block; font-size: 12px; font-weight: 600; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .auth-input {
+    width: 100%; padding: 12px 14px; border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 10px; background: rgba(0,0,0,0.25); color: #e2e8f0;
+    font-size: 15px; font-family: inherit; outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .auth-input:focus { border-color: rgba(239,68,68,0.5); }
+  .auth-input.error { border-color: #ef4444; }
+  .auth-input::placeholder { color: #475569; }
+  .field-error {
+    font-size: 11px; color: #ef4444; margin-top: 4px; min-height: 16px;
+  }
+
+  .password-toggle {
+    position: relative;
+  }
+  .password-toggle .toggle-vis {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: #64748b; cursor: pointer;
+    font-size: 16px; padding: 4px;
+  }
+  .password-toggle .auth-input { padding-right: 42px; }
+
+  .pw-strength { margin-top: 8px; }
+  .pw-strength-bar {
+    height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06);
+    overflow: hidden; margin-bottom: 6px;
+  }
+  .pw-strength-fill {
+    height: 100%; border-radius: 2px; transition: width 0.3s ease, background 0.3s ease;
+    width: 0%;
+  }
+  .pw-strength-fill.s1 { width: 25%; background: #ef4444; }
+  .pw-strength-fill.s2 { width: 50%; background: #f97316; }
+  .pw-strength-fill.s3 { width: 75%; background: #eab308; }
+  .pw-strength-fill.s4 { width: 100%; background: #22c55e; }
+  .pw-reqs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px;
+  }
+  .pw-req {
+    font-size: 11px; color: #475569; transition: color 0.2s ease;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .pw-req.met { color: #22c55e; }
+  .pw-req .check { font-size: 10px; }
+
+  .auth-submit {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    color: white; margin-top: 8px;
+    box-shadow: 0 4px 15px rgba(239,68,68,0.25);
+    transition: transform 0.1s ease, opacity 0.2s ease;
+    min-height: 48px; display: flex; align-items: center; justify-content: center;
+  }
+  .auth-submit:active { transform: scale(0.98); }
+  .auth-submit:disabled { opacity: 0.5; cursor: default; }
+
+  .auth-footer {
+    text-align: center; margin-top: 16px; font-size: 13px; color: #64748b;
+  }
+  .auth-footer a, .auth-link {
+    color: #f97316; text-decoration: none; cursor: pointer; font-weight: 600;
+    background: none; border: none; font-size: inherit; font-family: inherit;
+    padding: 0;
+  }
+  .auth-divider {
+    text-align: center; color: #475569; font-size: 12px; margin: 16px 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .auth-divider::before, .auth-divider::after {
+    content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06);
+  }
+  .auth-error-banner {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 10px; padding: 10px 14px; color: #fca5a5;
+    font-size: 13px; margin-bottom: 16px; text-align: center;
+    display: none;
+  }
+  .auth-error-banner.visible { display: block; }
+  .auth-success-banner {
+    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 10px; padding: 10px 14px; color: #86efac;
+    font-size: 13px; margin-bottom: 16px; text-align: center;
+    display: none;
+  }
+  .auth-success-banner.visible { display: block; }
+
+  .spinner {
+    width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---- Profile Screen ---- */
+  .profile-card {
+    position: relative; z-index: 1; width: 100%; max-width: 400px;
+    animation: welcomeFadeIn 0.5s ease-out;
+  }
+  .profile-header {
+    text-align: center; margin-bottom: 24px;
+  }
+  .profile-avatar {
+    width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 12px;
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800; color: white;
+    box-shadow: 0 8px 30px rgba(239,68,68,0.3);
+  }
+  .profile-name {
+    font-size: 22px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px;
+  }
+  .profile-email { font-size: 14px; color: #64748b; }
+  .profile-verified {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; margin-top: 6px; padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .profile-verified.yes {
+    background: rgba(34,197,94,0.15); color: #22c55e;
+  }
+  .profile-verified.no {
+    background: rgba(245,158,11,0.15); color: #f59e0b; cursor: pointer;
+  }
+
+  .profile-stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;
+  }
+  .profile-stat-card {
+    background: rgba(30,41,59,0.6); border-radius: 14px; padding: 16px;
+    text-align: center; border: 1px solid rgba(255,255,255,0.04);
+  }
+  .profile-stat-val { font-size: 28px; font-weight: 800; color: #e2e8f0; }
+  .profile-stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+  .profile-actions { display: flex; flex-direction: column; gap: 10px; }
+  .profile-btn {
+    width: 100%; padding: 12px; border: none; border-radius: 12px;
+    font-size: 14px; font-weight: 600; cursor: pointer; min-height: 44px;
+    transition: transform 0.1s ease;
+  }
+  .profile-btn:active { transform: scale(0.98); }
+  .profile-btn-primary { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+  .profile-btn-danger { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+  .profile-badge-row {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 4px;
+  }
+
+  /* ---- Win score display ---- */
+  .win-score {
+    font-size: 18px; font-weight: 700; margin-bottom: 6px; min-height: 24px;
+  }
+  .win-score.gold { color: #fbbf24; }
+  .win-score.zero { color: #64748b; }
+
+  /* ---- Leaderboard Screen ---- */
+  .lb-card {
+    position: relative; z-index: 1; width: 100%; max-width: 440px;
+    animation: welcomeFadeIn 0.5s ease-out;
+  }
+  .lb-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .lb-title {
+    font-size: 24px; font-weight: 800;
+    background: linear-gradient(135deg, #fbbf24, #f97316);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .lb-back {
+    background: rgba(255,255,255,0.08); border: none; color: #94a3b8;
+    padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; min-height: 40px;
+  }
+  .lb-back:active { background: rgba(255,255,255,0.14); }
+
+  .lb-your-score {
+    background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.15);
+    border-radius: 14px; padding: 14px 18px; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .lb-your-label { font-size: 13px; color: #94a3b8; }
+  .lb-your-val { font-size: 24px; font-weight: 800; color: #fbbf24; }
+  .lb-your-rank { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+  .lb-table {
+    width: 100%; border-collapse: collapse;
+  }
+  .lb-table th {
+    text-align: left; font-size: 11px; color: #475569; text-transform: uppercase;
+    letter-spacing: 1px; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .lb-table th:last-child, .lb-table td:last-child { text-align: right; }
+  .lb-table td {
+    padding: 10px 10px; font-size: 14px; color: #cbd5e1;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .lb-table tr.you td { color: #fbbf24; font-weight: 700; }
+  .lb-table tr:first-child td { color: #fbbf24; }
+  .lb-table tr:nth-child(2) td { color: #c0c0c0; }
+  .lb-table tr:nth-child(3) td { color: #cd7f32; }
+
+  .lb-rank {
+    width: 32px; height: 32px; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; font-weight: 800; font-size: 13px;
+  }
+  .lb-rank.r1 { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .lb-rank.r2 { background: rgba(192,192,192,0.15); color: #c0c0c0; }
+  .lb-rank.r3 { background: rgba(205,127,50,0.15); color: #cd7f32; }
+  .lb-rank.rn { background: rgba(255,255,255,0.06); color: #64748b; }
+
+  .lb-name { font-weight: 600; }
+  .lb-levels { font-size: 12px; color: #475569; }
+  .lb-empty { text-align: center; padding: 40px 20px; color: #475569; font-size: 14px; }
+  .lb-loading { text-align: center; padding: 40px 20px; color: #64748b; }
+
+  .lb-table-wrap {
+    background: rgba(30,41,59,0.5); border-radius: 14px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.04); max-height: 400px; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ---- Score badge on level cells ---- */
+  .level-cell .cell-score {
+    position: absolute; bottom: 1px; left: 0; right: 0;
+    font-size: 8px; color: #fbbf24; font-weight: 600; opacity: 0.8;
+  }
+
+  /* ---- Profile button on level select ---- */
+  .select-header {
+    width: 100%; max-width: 440px; display: flex;
+    align-items: center; justify-content: space-between;
+  }
+  .profile-btn-small {
+    width: 40px; height: 40px; border-radius: 50%; border: none;
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    color: white; font-size: 16px; font-weight: 800; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(239,68,68,0.2);
+    transition: transform 0.1s ease;
+  }
+  .profile-btn-small:active { transform: scale(0.9); }
+
+  /* ---- Responsive: phones ---- */
+  @media (max-width: 480px) {
+    .screen.active { gap: 14px; padding: 12px 10px; }
+
+    .level-grid-title { font-size: 24px; }
+    .level-grid { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .level-cell { min-width: 44px; min-height: 44px; font-size: 14px; }
+    .difficulty-section { max-width: 100%; }
+
+    header h1 { font-size: 22px; }
+    .level-info { gap: 6px; }
+
+    .board-frame { padding: 8px 44px 8px 8px; border-radius: 12px; }
+    .exit-marker { width: 36px; }
+
+    .controls { gap: 6px; }
+    .btn { padding: 10px 14px; font-size: 13px; }
+    .instructions { font-size: 12px; padding: 0 8px; }
+
+    .welcome-title { font-size: 36px; }
+    .welcome-subtitle { font-size: 13px; letter-spacing: 3px; margin-top: -12px; }
+    .welcome-board { width: 180px; height: 180px; }
+    .welcome-stats { gap: 20px; font-size: 12px; }
+    .welcome-stats .stat-num { font-size: 22px; }
+    .play-btn { padding: 14px 48px; font-size: 18px; }
+    .welcome-content { gap: 20px; }
+
+    .auth-card { padding: 24px 18px; border-radius: 16px; }
+    .auth-title { font-size: 24px; }
+    .profile-avatar { width: 64px; height: 64px; font-size: 26px; }
+    .profile-stat-val { font-size: 24px; }
+    .lb-title { font-size: 20px; }
+    .lb-your-val { font-size: 20px; }
+    .lb-table td { font-size: 13px; padding: 8px 8px; }
+    .lb-table-wrap { max-height: 300px; }
+  }
+
+  /* ---- Responsive: small phones (SE, Mini) ---- */
+  @media (max-width: 380px) {
+    .level-grid { grid-template-columns: repeat(5, 1fr); }
+    .welcome-board { width: 160px; height: 160px; }
   }
 </style>
 </head>
@@ -434,10 +786,162 @@
   </div>
 </div>
 
+<!-- Auth Screen -->
+<div class="screen auth-screen" id="authScreen">
+  <div class="welcome-bg" id="authBg"></div>
+  <div class="auth-card">
+    <div class="auth-title">Rush Hour</div>
+    <div class="auth-subtitle">Sign in to save your progress</div>
+
+    <div class="auth-error-banner" id="authError"></div>
+    <div class="auth-success-banner" id="authSuccess"></div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin">Log In</button>
+      <button class="auth-tab" id="tabSignup">Sign Up</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm">
+      <div class="auth-field">
+        <label for="loginEmail">Email</label>
+        <input class="auth-input" type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" required>
+        <div class="field-error" id="loginEmailErr"></div>
+      </div>
+      <div class="auth-field">
+        <label for="loginPassword">Password</label>
+        <div class="password-toggle">
+          <input class="auth-input" type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password" required>
+          <button type="button" class="toggle-vis" id="toggleLoginPw">Show</button>
+        </div>
+        <div class="field-error" id="loginPwErr"></div>
+      </div>
+      <button type="submit" class="auth-submit" id="loginSubmit">Log In</button>
+      <div class="auth-footer">
+        <button type="button" class="auth-link" id="forgotPwBtn">Forgot password?</button>
+      </div>
+    </form>
+
+    <!-- Signup Form -->
+    <form id="signupForm" style="display:none">
+      <div class="auth-field">
+        <label for="signupName">Display Name</label>
+        <input class="auth-input" type="text" id="signupName" placeholder="Your name" autocomplete="name" required>
+        <div class="field-error" id="signupNameErr"></div>
+      </div>
+      <div class="auth-field">
+        <label for="signupEmail">Email</label>
+        <input class="auth-input" type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email" required>
+        <div class="field-error" id="signupEmailErr"></div>
+      </div>
+      <div class="auth-field">
+        <label for="signupPassword">Password</label>
+        <div class="password-toggle">
+          <input class="auth-input" type="password" id="signupPassword" placeholder="Create a password" autocomplete="new-password" required>
+          <button type="button" class="toggle-vis" id="toggleSignupPw">Show</button>
+        </div>
+        <div class="pw-strength">
+          <div class="pw-strength-bar"><div class="pw-strength-fill" id="pwStrengthFill"></div></div>
+          <div class="pw-reqs">
+            <div class="pw-req" id="reqLen"><span class="check">○</span> 8+ characters</div>
+            <div class="pw-req" id="reqUpper"><span class="check">○</span> Uppercase</div>
+            <div class="pw-req" id="reqLower"><span class="check">○</span> Lowercase</div>
+            <div class="pw-req" id="reqNum"><span class="check">○</span> Number</div>
+            <div class="pw-req" id="reqSpecial"><span class="check">○</span> Special char</div>
+          </div>
+        </div>
+      </div>
+      <div class="auth-field">
+        <label for="signupConfirm">Confirm Password</label>
+        <div class="password-toggle">
+          <input class="auth-input" type="password" id="signupConfirm" placeholder="Confirm your password" autocomplete="new-password" required>
+          <button type="button" class="toggle-vis" id="toggleConfirmPw">Show</button>
+        </div>
+        <div class="field-error" id="signupConfirmErr"></div>
+      </div>
+      <button type="submit" class="auth-submit" id="signupSubmit">Create Account</button>
+    </form>
+
+    <div class="auth-divider">or</div>
+    <button type="button" class="auth-submit" id="skipAuthBtn"
+      style="background: rgba(255,255,255,0.06); color: #94a3b8; box-shadow: none; font-size: 14px;">
+      Continue as Guest
+    </button>
+  </div>
+</div>
+
+<!-- Profile Screen -->
+<div class="screen auth-screen" id="profileScreen">
+  <div class="welcome-bg" id="profileBg"></div>
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div class="profile-name" id="profileName">Player</div>
+      <div class="profile-email" id="profileEmail"></div>
+      <div class="profile-badge-row">
+        <div class="profile-verified no" id="profileVerified" style="display:none"></div>
+      </div>
+    </div>
+    <div class="profile-stats-grid">
+      <div class="profile-stat-card">
+        <div class="profile-stat-val" id="statCompleted">0</div>
+        <div class="profile-stat-label">Completed</div>
+      </div>
+      <div class="profile-stat-card">
+        <div class="profile-stat-val" id="statProgress">0%</div>
+        <div class="profile-stat-label">Progress</div>
+      </div>
+      <div class="profile-stat-card" style="grid-column: 1 / -1;">
+        <div class="profile-stat-val" id="statTotalScore" style="color:#fbbf24">0</div>
+        <div class="profile-stat-label">Total Score</div>
+      </div>
+    </div>
+    <div class="profile-actions">
+      <button class="profile-btn profile-btn-primary" id="profilePlayBtn">← Back to Levels</button>
+      <button class="profile-btn profile-btn-primary" id="profileResetPwBtn" style="display:none">Change Password</button>
+      <button class="profile-btn profile-btn-danger" id="profileLogoutBtn" style="display:none">Log Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leaderboard Screen -->
+<div class="screen auth-screen" id="leaderboardScreen">
+  <div class="welcome-bg" id="lbBg"></div>
+  <div class="lb-card">
+    <div class="lb-header">
+      <div class="lb-title">Leaderboard</div>
+      <button class="lb-back" id="lbBackBtn">← Back</button>
+    </div>
+    <div class="lb-your-score" id="lbYourScore">
+      <div>
+        <div class="lb-your-label">Your Score</div>
+        <div class="lb-your-rank" id="lbYourRank"></div>
+      </div>
+      <div class="lb-your-val" id="lbYourVal">0</div>
+    </div>
+    <div class="lb-table-wrap">
+      <table class="lb-table">
+        <thead><tr><th>#</th><th>Player</th><th>Levels</th><th>Score</th></tr></thead>
+        <tbody id="lbBody">
+          <tr><td colspan="4" class="lb-loading">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- Level Select Screen -->
 <div class="screen" id="selectScreen">
-  <div class="level-grid-title">Rush Hour</div>
-  <p style="color:#64748b; font-size:14px; margin-top:-8px;">Select a level</p>
+  <div class="select-header">
+    <div>
+      <div class="level-grid-title">Rush Hour</div>
+      <p style="color:#64748b; font-size:14px;">Select a level · <span style="color:#fbbf24" id="totalScoreDisplay">0 pts</span></p>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="lb-back" id="openLbBtn" title="Leaderboard" style="font-size:16px; padding:8px 12px; min-height:40px;">🏆</button>
+      <button class="profile-btn-small" id="openProfileBtn" title="Profile">?</button>
+    </div>
+  </div>
   <div id="levelSections"></div>
 </div>
 
@@ -457,6 +961,7 @@
         <div class="overlay-bg"></div>
         <div class="overlay-content">
           <div class="win-title">Solved!</div>
+          <div class="win-score gold" id="winScore"></div>
           <div class="win-subtitle" id="winSubtitle">Level 1 complete</div>
           <div class="win-btns">
             <button class="win-btn win-btn-secondary" id="menuBtn">Levels</button>
@@ -475,10 +980,520 @@
   <p class="instructions">Drag vehicles along their lane to clear a path.<br>Get the <strong style="color:#ef4444">red car</strong> to the exit →</p>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged, sendEmailVerification, sendPasswordResetEmail,
+  updateProfile
+} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+import {
+  getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit
+} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  FIREBASE CONFIG — Replace with your own from Firebase Console  ║
+// ║  See FIREBASE_SETUP.md for step-by-step instructions            ║
+// ╚══════════════════════════════════════════════════════════════════╝
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+let auth = null;
+let db = null;
+let firebaseReady = false;
+try {
+  if (FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
+    const app = initializeApp(FIREBASE_CONFIG);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    firebaseReady = true;
+  }
+} catch (e) {
+  console.warn('Firebase not configured:', e.message);
+}
+
+async function submitScoreToLeaderboard() {
+  if (!firebaseReady || !db || !currentUser) return;
+  try {
+    const progress = loadProgress();
+    const completed = Object.keys(progress).length;
+    const totalScore = Object.values(progress).reduce((s, v) => s + (typeof v === 'object' ? v.score : 0), 0);
+    await setDoc(doc(db, 'leaderboard', currentUser.uid), {
+      name: currentUser.displayName || 'Anonymous',
+      email: currentUser.email,
+      score: totalScore,
+      levels: completed,
+      updatedAt: Date.now(),
+    });
+  } catch (e) { console.warn('Leaderboard submit failed:', e.message); }
+}
+
+async function fetchLeaderboard(max = 50) {
+  if (!firebaseReady || !db) return [];
+  try {
+    const q = query(collection(db, 'leaderboard'), orderBy('score', 'desc'), limit(max));
+    const snap = await getDocs(q);
+    return snap.docs.map((d, i) => ({ rank: i + 1, id: d.id, ...d.data() }));
+  } catch (e) {
+    console.warn('Leaderboard fetch failed:', e.message);
+    return [];
+  }
+}
+
+// ═══════════════════════════════════════
+// Auth UI logic
+// ═══════════════════════════════════════
+const authScreen = document.getElementById('authScreen');
+const profileScreen = document.getElementById('profileScreen');
+const tabLogin = document.getElementById('tabLogin');
+const tabSignup = document.getElementById('tabSignup');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const authError = document.getElementById('authError');
+const authSuccess = document.getElementById('authSuccess');
+const skipAuthBtn = document.getElementById('skipAuthBtn');
+const openProfileBtn = document.getElementById('openProfileBtn');
+const profilePlayBtn = document.getElementById('profilePlayBtn');
+const profileLogoutBtn = document.getElementById('profileLogoutBtn');
+const profileResetPwBtn = document.getElementById('profileResetPwBtn');
+
+let currentUser = null;
+
+function showAuthError(msg) {
+  authError.textContent = msg;
+  authError.classList.add('visible');
+  authSuccess.classList.remove('visible');
+}
+function showAuthSuccess(msg) {
+  authSuccess.textContent = msg;
+  authSuccess.classList.add('visible');
+  authError.classList.remove('visible');
+}
+function clearAuthMessages() {
+  authError.classList.remove('visible');
+  authSuccess.classList.remove('visible');
+}
+
+tabLogin.addEventListener('click', () => {
+  tabLogin.classList.add('active');
+  tabSignup.classList.remove('active');
+  loginForm.style.display = '';
+  signupForm.style.display = 'none';
+  clearAuthMessages();
+});
+tabSignup.addEventListener('click', () => {
+  tabSignup.classList.add('active');
+  tabLogin.classList.remove('active');
+  signupForm.style.display = '';
+  loginForm.style.display = 'none';
+  clearAuthMessages();
+});
+
+// Password visibility toggles
+document.querySelectorAll('.toggle-vis').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = btn.parentElement.querySelector('.auth-input');
+    const isPw = input.type === 'password';
+    input.type = isPw ? 'text' : 'password';
+    btn.textContent = isPw ? 'Hide' : 'Show';
+  });
+});
+
+// Password strength checker
+const pwInput = document.getElementById('signupPassword');
+const pwFill = document.getElementById('pwStrengthFill');
+const reqs = {
+  len: document.getElementById('reqLen'),
+  upper: document.getElementById('reqUpper'),
+  lower: document.getElementById('reqLower'),
+  num: document.getElementById('reqNum'),
+  special: document.getElementById('reqSpecial'),
+};
+
+function checkPasswordStrength(pw) {
+  const checks = {
+    len: pw.length >= 8,
+    upper: /[A-Z]/.test(pw),
+    lower: /[a-z]/.test(pw),
+    num: /[0-9]/.test(pw),
+    special: /[^A-Za-z0-9]/.test(pw),
+  };
+  let score = Object.values(checks).filter(Boolean).length;
+
+  for (const [key, el] of Object.entries(reqs)) {
+    if (checks[key]) {
+      el.classList.add('met');
+      el.querySelector('.check').textContent = '✓';
+    } else {
+      el.classList.remove('met');
+      el.querySelector('.check').textContent = '○';
+    }
+  }
+
+  pwFill.className = 'pw-strength-fill';
+  if (score >= 1) pwFill.classList.add('s' + Math.min(score, 4));
+
+  return checks;
+}
+
+pwInput.addEventListener('input', () => checkPasswordStrength(pwInput.value));
+
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function setSubmitLoading(btn, loading) {
+  if (loading) {
+    btn.disabled = true;
+    btn.dataset.origText = btn.textContent;
+    btn.textContent = '';
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner';
+    btn.appendChild(spinner);
+  } else {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.origText || 'Submit';
+    const spinner = btn.querySelector('.spinner');
+    if (spinner) spinner.remove();
+  }
+}
+
+function firebaseErrorMessage(code) {
+  const map = {
+    'auth/email-already-in-use': 'An account with this email already exists.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/weak-password': 'Password is too weak.',
+    'auth/user-not-found': 'No account found with this email.',
+    'auth/wrong-password': 'Incorrect password.',
+    'auth/invalid-credential': 'Incorrect email or password.',
+    'auth/too-many-requests': 'Too many attempts. Please wait a moment.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+  };
+  return map[code] || 'An error occurred. Please try again.';
+}
+
+// Signup
+signupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearAuthMessages();
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pw = document.getElementById('signupPassword').value;
+  const confirm = document.getElementById('signupConfirm').value;
+
+  if (!name) { document.getElementById('signupNameErr').textContent = 'Name is required'; return; }
+  document.getElementById('signupNameErr').textContent = '';
+
+  if (!validateEmail(email)) { document.getElementById('signupEmailErr').textContent = 'Enter a valid email'; return; }
+  document.getElementById('signupEmailErr').textContent = '';
+
+  const checks = checkPasswordStrength(pw);
+  if (!Object.values(checks).every(Boolean)) {
+    showAuthError('Password must meet all requirements');
+    return;
+  }
+  if (pw !== confirm) {
+    document.getElementById('signupConfirmErr').textContent = 'Passwords do not match';
+    return;
+  }
+  document.getElementById('signupConfirmErr').textContent = '';
+
+  if (!firebaseReady) {
+    showAuthError('Firebase is not configured. See FIREBASE_SETUP.md');
+    return;
+  }
+
+  const btn = document.getElementById('signupSubmit');
+  setSubmitLoading(btn, true);
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pw);
+    await updateProfile(cred.user, { displayName: name });
+    await sendEmailVerification(cred.user);
+    onUserLoggedIn(cred.user);
+  } catch (err) {
+    showAuthError(firebaseErrorMessage(err.code));
+  } finally {
+    setSubmitLoading(btn, false);
+  }
+});
+
+// Login
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearAuthMessages();
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPassword').value;
+
+  if (!validateEmail(email)) { document.getElementById('loginEmailErr').textContent = 'Enter a valid email'; return; }
+  document.getElementById('loginEmailErr').textContent = '';
+  if (!pw) { document.getElementById('loginPwErr').textContent = 'Enter your password'; return; }
+  document.getElementById('loginPwErr').textContent = '';
+
+  if (!firebaseReady) {
+    showAuthError('Firebase is not configured. See FIREBASE_SETUP.md');
+    return;
+  }
+
+  const btn = document.getElementById('loginSubmit');
+  setSubmitLoading(btn, true);
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pw);
+    onUserLoggedIn(cred.user);
+  } catch (err) {
+    showAuthError(firebaseErrorMessage(err.code));
+  } finally {
+    setSubmitLoading(btn, false);
+  }
+});
+
+// Forgot password
+document.getElementById('forgotPwBtn').addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  if (!validateEmail(email)) {
+    showAuthError('Enter your email above, then click "Forgot password"');
+    return;
+  }
+  if (!firebaseReady) { showAuthError('Firebase is not configured.'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showAuthSuccess('Password reset email sent! Check your inbox.');
+  } catch (err) {
+    showAuthError(firebaseErrorMessage(err.code));
+  }
+});
+
+// Skip (guest mode)
+skipAuthBtn.addEventListener('click', () => {
+  currentUser = null;
+  showScreenOnly(selectScreen);
+  if (window._game) window._game.buildLevelSelect();
+  updateProfileButton();
+});
+
+// Profile
+function updateProfileUI() {
+  const avatar = document.getElementById('profileAvatar');
+  const nameEl = document.getElementById('profileName');
+  const emailEl = document.getElementById('profileEmail');
+  const verifiedEl = document.getElementById('profileVerified');
+  const statComp = document.getElementById('statCompleted');
+  const statProg = document.getElementById('statProgress');
+
+  if (currentUser) {
+    const initials = (currentUser.displayName || currentUser.email || '?')
+      .split(/[\s@]/).filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('');
+    avatar.textContent = initials;
+    nameEl.textContent = currentUser.displayName || 'Player';
+    emailEl.textContent = currentUser.email;
+    profileLogoutBtn.style.display = '';
+    profileResetPwBtn.style.display = '';
+
+    verifiedEl.style.display = '';
+    if (currentUser.emailVerified) {
+      verifiedEl.textContent = '✓ Email verified';
+      verifiedEl.className = 'profile-verified yes';
+      verifiedEl.onclick = null;
+    } else {
+      verifiedEl.textContent = '⚠ Verify email';
+      verifiedEl.className = 'profile-verified no';
+      verifiedEl.onclick = async () => {
+        try {
+          await sendEmailVerification(currentUser);
+          verifiedEl.textContent = '✓ Verification sent!';
+        } catch { verifiedEl.textContent = '⚠ Try again later'; }
+      };
+    }
+  } else {
+    avatar.textContent = '?';
+    nameEl.textContent = 'Guest';
+    emailEl.textContent = 'Not signed in';
+    verifiedEl.style.display = 'none';
+    profileLogoutBtn.style.display = 'none';
+    profileResetPwBtn.style.display = 'none';
+  }
+
+  const progress = loadProgress();
+  const completed = Object.keys(progress).length;
+  statComp.textContent = completed;
+  statProg.textContent = Math.round((completed / 140) * 100) + '%';
+  document.getElementById('statTotalScore').textContent = getTotalScore().toLocaleString();
+}
+
+function updateProfileButton() {
+  const btn = openProfileBtn;
+  if (currentUser) {
+    const initials = (currentUser.displayName || currentUser.email || '?')
+      .split(/[\s@]/).filter(Boolean).map(w => w[0].toUpperCase()).slice(0, 2).join('');
+    btn.textContent = initials;
+  } else {
+    btn.textContent = '?';
+  }
+}
+
+openProfileBtn.addEventListener('click', () => {
+  updateProfileUI();
+  showScreenOnly(profileScreen);
+});
+
+profilePlayBtn.addEventListener('click', () => {
+  showScreenOnly(selectScreen);
+  if (window._game) window._game.buildLevelSelect();
+});
+
+profileLogoutBtn.addEventListener('click', async () => {
+  if (firebaseReady) await signOut(auth);
+  currentUser = null;
+  showScreenOnly(authScreen);
+});
+
+profileResetPwBtn.addEventListener('click', async () => {
+  if (!currentUser || !firebaseReady) return;
+  try {
+    await sendPasswordResetEmail(auth, currentUser.email);
+    alert('Password reset email sent to ' + currentUser.email);
+  } catch { alert('Could not send reset email. Try again later.'); }
+});
+
+function onUserLoggedIn(user) {
+  currentUser = user;
+  showScreenOnly(selectScreen);
+  if (window._game) window._game.buildLevelSelect();
+  updateProfileButton();
+}
+
+const leaderboardScreen = document.getElementById('leaderboardScreen');
+function showScreenOnly(screen) {
+  [welcomeScreen, authScreen, profileScreen, selectScreen, gameScreen, leaderboardScreen].forEach(s => s.classList.remove('active'));
+  screen.classList.add('active');
+  if (screen !== welcomeScreen && window._game) window._game.stopDemo();
+}
+
+// --- Leaderboard UI ---
+const lbBody = document.getElementById('lbBody');
+const lbYourVal = document.getElementById('lbYourVal');
+const lbYourRank = document.getElementById('lbYourRank');
+document.getElementById('lbBackBtn').addEventListener('click', () => {
+  showScreenOnly(selectScreen);
+  if (window._game) window._game.buildLevelSelect();
+});
+document.getElementById('openLbBtn').addEventListener('click', showLeaderboard);
+
+async function showLeaderboard() {
+  showScreenOnly(leaderboardScreen);
+  const myTotal = getTotalScore();
+  lbYourVal.textContent = myTotal.toLocaleString();
+
+  lbBody.innerHTML = '<tr><td colspan="4" class="lb-loading">Loading...</td></tr>';
+  const entries = await fetchLeaderboard(50);
+
+  if (!entries.length) {
+    lbBody.innerHTML = '<tr><td colspan="4" class="lb-empty">No scores yet. Be the first!</td></tr>';
+    lbYourRank.textContent = '';
+    return;
+  }
+
+  let myRank = null;
+  lbBody.innerHTML = '';
+  for (const entry of entries) {
+    const isYou = currentUser && entry.id === currentUser.uid;
+    if (isYou) myRank = entry.rank;
+    const tr = document.createElement('tr');
+    if (isYou) tr.className = 'you';
+
+    const rankCls = entry.rank <= 3 ? 'r' + entry.rank : 'rn';
+    const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : '';
+
+    tr.innerHTML =
+      '<td><span class="lb-rank ' + rankCls + '">' + (medal || entry.rank) + '</span></td>' +
+      '<td class="lb-name">' + escapeHtml(entry.name) + (isYou ? ' <span style="font-size:11px;opacity:0.6">(you)</span>' : '') + '</td>' +
+      '<td class="lb-levels">' + (entry.levels || 0) + '/140</td>' +
+      '<td style="font-weight:700">' + (entry.score || 0).toLocaleString() + '</td>';
+    lbBody.appendChild(tr);
+  }
+
+  lbYourRank.textContent = myRank ? 'Rank #' + myRank : (currentUser ? 'Not ranked yet' : 'Sign in to rank');
+}
+
+function escapeHtml(str) {
+  const el = document.createElement('span');
+  el.textContent = str;
+  return el.innerHTML;
+}
+
+function updateTotalScoreDisplay() {
+  const el = document.getElementById('totalScoreDisplay');
+  if (el) el.textContent = getTotalScore().toLocaleString() + ' pts';
+}
+
+// Firebase auth state listener
+if (firebaseReady) {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      currentUser = user;
+      updateProfileButton();
+      if (authScreen.classList.contains('active')) {
+        showScreenOnly(selectScreen);
+        if (window._game) window._game.buildLevelSelect();
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// Shared state (module scope)
+// ═══════════════════════════════════════
+const STORAGE_KEY = 'rush_hour_progress';
+function getStorageKey() {
+  return currentUser ? STORAGE_KEY + '_' + currentUser.uid : STORAGE_KEY;
+}
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem(getStorageKey())) || {}; } catch { return {}; }
+}
+function saveCompleted(idx, score) {
+  const p = loadProgress();
+  const prev = typeof p[idx] === 'object' ? p[idx].score : 0;
+  p[idx] = { score: Math.max(prev || 0, score || 0), ts: Date.now() };
+  localStorage.setItem(getStorageKey(), JSON.stringify(p));
+  if (currentUser && firebaseReady) submitScoreToLeaderboard();
+}
+function isCompleted(idx) { return !!loadProgress()[idx]; }
+function getLevelScore(idx) {
+  const p = loadProgress();
+  if (!p[idx]) return 0;
+  return typeof p[idx] === 'object' ? p[idx].score : 0;
+}
+function getTotalScore() {
+  const p = loadProgress();
+  return Object.values(p).reduce((sum, v) => sum + (typeof v === 'object' ? v.score : 0), 0);
+}
+
+const welcomeScreen = document.getElementById('welcomeScreen');
+const selectScreen = document.getElementById('selectScreen');
+const gameScreen = document.getElementById('gameScreen');
+const levelSections = document.getElementById('levelSections');
+
+// ═══════════════════════════════════════
+// Game logic
+// ═══════════════════════════════════════
 (function () {
-  const GRID = 6, CELL = 60;
+  const GRID = 6;
+  let CELL = 60;
   const board = document.getElementById('board');
+
+  function computeCellSize() {
+    const frameHPad = 8 + 44 + 20; // board-frame left + right padding + body margin
+    const maxBoardWidth = Math.min(360, window.innerWidth - frameHPad);
+    CELL = Math.floor(maxBoardWidth / GRID);
+    const boardSize = CELL * GRID;
+    board.style.width = boardSize + 'px';
+    board.style.height = boardSize + 'px';
+  }
   const winOverlay = document.getElementById('winOverlay');
   const winSubtitle = document.getElementById('winSubtitle');
   const nextBtn = document.getElementById('nextBtn');
@@ -487,10 +1502,7 @@
   const backBtn = document.getElementById('backBtn');
   const levelBadge = document.getElementById('levelBadge');
   const diffBadge = document.getElementById('diffBadge');
-  const welcomeScreen = document.getElementById('welcomeScreen');
-  const selectScreen = document.getElementById('selectScreen');
-  const gameScreen = document.getElementById('gameScreen');
-  const levelSections = document.getElementById('levelSections');
+  // welcomeScreen, selectScreen, gameScreen, levelSections are at module scope
 
   const COLORS = [
     '#3b82f6','#22c55e','#a855f7','#f97316','#06b6d4',
@@ -499,159 +1511,289 @@
   ];
 
   const LEVELS = [
-    {v:[[2,0,2,"h",true],[1,4,2,"v",false],[3,4,2,"h",false],[0,3,2,"h",false],[5,0,3,"h",false],[0,5,2,"v",false],[1,2,3,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,4,2,"v",false],[1,5,3,"v",false],[3,1,3,"v",false],[5,4,2,"h",false],[1,3,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,3,"v",false],[5,3,2,"h",false],[4,3,2,"h",false],[1,4,2,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,2,2,"h",true],[0,4,3,"v",false],[4,2,3,"h",false],[1,5,2,"v",false],[3,3,3,"h",false],[0,1,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[0,4,3,"v",false],[3,0,2,"v",false],[3,1,3,"h",false],[4,2,2,"h",false],[1,2,2,"h",false],[4,4,2,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,2,2,"h",true],[2,5,2,"v",false],[3,0,2,"h",false],[4,2,2,"v",false],[1,4,3,"v",false],[0,0,2,"h",false],[5,0,2,"h",false],[5,3,2,"h",false],[1,1,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[2,4,3,"v",false],[3,2,2,"h",false],[4,0,2,"v",false],[2,0,2,"v",false],[3,1,3,"v",false],[1,0,3,"h",false],[5,3,3,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,2,2,"h",true],[1,5,3,"v",false],[1,4,2,"v",false],[3,2,2,"v",false],[3,0,2,"v",false],[5,4,2,"h",false],[1,0,3,"h",false],[4,3,2,"v",false],[0,4,2,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[1,3,2,"v",false],[4,1,2,"v",false],[1,5,2,"v",false],[2,4,3,"v",false],[3,0,2,"h",false],[1,2,2,"v",false],[4,2,2,"h",false],[3,5,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[0,4,3,"v",false],[5,4,2,"h",false],[0,0,3,"v",false],[3,0,3,"v",false],[2,3,3,"v",false],[0,1,3,"h",false],[4,1,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[1,4,2,"v",false],[4,2,2,"h",false],[3,1,2,"v",false],[3,4,2,"h",false],[1,0,2,"v",false],[0,3,2,"h",false],[1,3,3,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,5,2,"v",false],[3,1,3,"h",false],[0,2,3,"v",false],[4,5,2,"v",false],[0,0,2,"h",false],[1,3,2,"h",false],[2,4,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[0,5,3,"v",false],[3,0,3,"v",false],[4,2,2,"h",false],[2,4,3,"v",false],[5,1,2,"h",false],[1,0,2,"h",false],[0,3,3,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,3,3,"v",false],[5,3,2,"h",false],[0,4,2,"v",false],[2,2,3,"v",false],[0,2,2,"h",false],[0,0,2,"h",false],[5,0,2,"h",false],[2,5,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[2,5,2,"v",false],[0,0,2,"h",false],[4,4,2,"h",false],[4,1,2,"v",false],[4,3,2,"v",false],[2,0,2,"v",false],[1,4,3,"v",false],[1,0,2,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,3,2,"v",false],[3,5,3,"v",false],[5,3,2,"h",false],[3,2,2,"v",false],[1,4,3,"v",false],[0,4,2,"h",false],[4,0,2,"h",false],[1,2,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[0,2,3,"v",false],[1,3,2,"v",false],[0,4,2,"h",false],[1,4,2,"v",false],[2,5,2,"v",false],[3,3,2,"v",false],[5,3,2,"h",false],[0,0,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[0,4,3,"v",false],[3,0,2,"h",false],[5,4,2,"h",false],[0,2,2,"v",false],[1,0,2,"h",false],[1,3,2,"v",false],[5,1,2,"h",false],[3,2,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,2,2,"h",true],[1,5,3,"v",false],[5,3,3,"h",false],[0,2,2,"h",false],[3,0,3,"v",false],[3,2,2,"h",false],[4,2,2,"v",false],[1,1,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,2,3,"v",false],[0,2,2,"v",false],[1,3,3,"v",false],[5,3,2,"h",false],[2,4,2,"v",false],[4,0,2,"v",false],[1,4,2,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[1,4,3,"v",false],[0,3,3,"v",false],[4,1,2,"v",false],[5,3,2,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[5,2,3,"h",false],[2,3,3,"v",false],[1,4,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[2,5,2,"v",false],[0,3,3,"v",false],[5,0,2,"h",false],[4,3,2,"h",false],[3,3,2,"h",false],[4,0,3,"h",false],[0,0,2,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,5,2,"v",false],[4,0,3,"h",false],[2,4,3,"v",false],[3,0,3,"h",false],[5,1,2,"h",false],[1,2,3,"h",false],[5,3,2,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,0,2,"v",false],[0,3,3,"v",false],[4,4,2,"h",false],[4,2,2,"h",false],[5,0,2,"h",false],[1,5,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[0,1,2,"v",false],[3,0,2,"h",false],[0,3,2,"v",false],[2,5,3,"v",false],[5,2,3,"h",false],[2,4,3,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,2,3,"v",false],[0,0,2,"h",false],[1,0,3,"h",false],[2,3,2,"v",false],[4,5,2,"v",false],[1,5,2,"v",false],[4,0,2,"v",false],[2,4,3,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[2,5,3,"v",false],[1,1,2,"h",false],[3,2,2,"h",false],[1,3,2,"h",false],[4,2,2,"v",false],[4,3,2,"h",false],[3,0,2,"v",false],[2,4,2,"v",false]],par:5,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[1,3,2,"v",false],[5,0,3,"h",false],[4,1,2,"h",false],[3,1,3,"h",false],[2,5,2,"v",false],[0,4,3,"v",false],[0,1,3,"h",false]],par:5,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[1,4,2,"v",false],[1,3,3,"v",false],[3,0,2,"h",false],[0,1,2,"v",false],[2,5,2,"v",false],[4,2,3,"h",false],[5,3,3,"h",false]],par:6,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[1,3,2,"v",false],[3,0,3,"h",false],[0,3,2,"h",false],[0,0,2,"v",false],[5,1,2,"h",false],[0,2,3,"v",false],[5,3,3,"h",false],[1,4,2,"h",false]],par:6,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,3,2,"v",false],[0,2,3,"h",false],[0,1,2,"v",false],[4,5,2,"v",false],[1,2,2,"v",false],[5,2,3,"h",false],[1,4,2,"v",false],[4,1,3,"h",false]],par:6,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[1,4,3,"v",false],[3,1,3,"v",false],[4,4,2,"h",false],[4,2,2,"h",false]],par:6,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[1,3,3,"v",false],[0,1,2,"v",false],[4,3,2,"h",false],[0,4,3,"v",false],[2,0,2,"v",false],[4,2,2,"v",false]],par:7,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[0,4,3,"v",false],[0,3,2,"v",false],[3,0,2,"v",false],[3,1,2,"h",false],[4,2,2,"v",false],[1,1,2,"h",false],[4,1,2,"v",false],[4,4,2,"h",false]],par:7,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[0,3,3,"v",false],[3,5,2,"v",false],[1,4,2,"h",false],[2,2,3,"v",false],[3,0,2,"v",false],[4,3,2,"h",false],[1,1,2,"h",false],[5,2,2,"h",false]],par:8,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[0,4,3,"v",false],[3,3,2,"v",false],[3,4,2,"h",false],[1,1,3,"h",false],[3,1,2,"h",false],[2,0,2,"v",false],[4,4,2,"h",false]],par:8,d:"Beginner"},
-    {v:[[2,2,2,"h",true],[0,5,3,"v",false],[5,4,2,"h",false],[1,4,3,"v",false],[3,2,3,"v",false],[2,1,2,"v",false],[0,1,3,"h",false]],par:8,d:"Beginner"},
-    {v:[[2,0,2,"h",true],[2,5,3,"v",false],[4,3,2,"h",false],[3,2,3,"h",false],[0,4,3,"v",false],[4,1,2,"v",false],[0,2,2,"v",false],[5,2,3,"h",false],[0,3,2,"v",false]],par:8,d:"Beginner"},
-    {v:[[2,2,2,"h",true],[0,4,3,"v",false],[2,1,3,"v",false],[5,3,2,"h",false],[4,3,2,"h",false],[0,1,3,"h",false],[4,2,2,"v",false],[3,0,3,"v",false]],par:9,d:"Beginner"},
-    {v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,0,3,"h",false],[3,4,2,"h",false],[4,2,3,"h",false],[1,1,3,"h",false],[1,0,3,"v",false],[0,3,2,"h",false],[5,2,2,"h",false],[3,1,2,"v",false],[2,3,2,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,3,2,"v",false],[0,0,2,"h",false],[1,2,2,"v",false],[3,4,2,"h",false],[5,2,2,"h",false],[5,4,2,"h",false],[3,2,2,"v",false],[0,4,2,"v",false],[3,3,2,"v",false],[0,5,3,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[2,3,2,"v",false],[3,4,2,"v",false],[0,2,3,"v",false],[3,0,3,"h",false],[5,3,2,"h",false],[3,5,3,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,2,2,"h",true],[2,5,2,"v",false],[3,3,2,"h",false],[0,3,2,"v",false],[1,4,2,"v",false],[0,1,3,"v",false],[0,2,2,"v",false],[0,4,2,"h",false],[4,5,2,"v",false],[5,0,2,"h",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,4,3,"v",false],[5,3,2,"h",false],[3,5,3,"v",false],[4,1,2,"v",false],[1,2,3,"v",false],[4,3,2,"h",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,3,2,"v",false],[0,2,3,"h",false],[0,5,2,"v",false],[2,2,2,"v",false],[0,0,2,"h",false],[4,2,2,"v",false],[2,4,2,"v",false],[3,0,2,"h",false],[3,5,2,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[3,5,3,"v",false],[2,3,2,"v",false],[4,1,2,"v",false],[0,2,2,"v",false],[4,2,2,"h",false],[1,3,2,"h",false],[4,4,2,"v",false],[1,5,2,"v",false],[4,0,2,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[0,5,3,"v",false],[1,2,2,"v",false],[5,2,2,"h",false],[3,2,2,"h",false],[4,1,2,"v",false],[1,3,2,"h",false],[5,4,2,"h",false],[0,2,2,"h",false],[3,4,2,"h",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,5,3,"v",false],[4,0,2,"v",false],[1,2,3,"v",false],[5,3,3,"h",false],[4,2,2,"h",false],[3,4,2,"v",false],[1,3,2,"v",false],[3,0,2,"h",false],[0,2,2,"h",false],[1,0,2,"h",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,2,3,"v",false],[0,4,2,"v",false],[5,2,3,"h",false],[2,5,3,"v",false],[4,2,3,"h",false],[3,0,2,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,2,2,"h",true],[0,5,3,"v",false],[1,0,3,"v",false],[3,2,2,"v",false],[2,1,3,"v",false],[4,3,2,"h",false],[0,4,3,"v",false],[5,3,2,"h",false],[1,2,2,"h",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,5,3,"v",false],[3,1,2,"v",false],[4,4,2,"v",false],[1,0,2,"h",false],[2,2,2,"v",false],[0,4,2,"h",false],[0,2,2,"v",false],[0,3,2,"v",false],[2,3,3,"v",false],[2,4,2,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,2,2,"h",true],[1,4,3,"v",false],[1,1,3,"h",false],[4,3,3,"h",false],[3,2,2,"v",false],[0,2,3,"h",false],[0,5,3,"v",false],[4,0,2,"v",false],[2,0,2,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[0,5,3,"v",false],[5,1,2,"h",false],[4,4,2,"h",false],[1,2,2,"v",false],[1,3,3,"v",false],[3,0,3,"v",false],[3,1,2,"v",false],[0,3,2,"h",false]],par:10,d:"Intermediate"},
-    {v:[[2,2,2,"h",true],[1,4,3,"v",false],[2,1,3,"v",false],[5,2,2,"h",false],[0,3,2,"h",false],[1,1,3,"h",false],[2,0,2,"v",false],[0,0,2,"v",false],[2,5,3,"v",false],[4,3,2,"h",false],[3,2,2,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,1,2,"h",false],[5,1,3,"h",false],[1,5,2,"v",false],[0,3,3,"v",false],[3,3,2,"h",false],[3,2,2,"v",false],[3,5,2,"v",false],[5,4,2,"h",false],[4,3,2,"h",false]],par:10,d:"Intermediate"},
-    {v:[[2,2,2,"h",true],[1,5,2,"v",false],[4,2,2,"v",false],[1,1,2,"v",false],[4,3,2,"h",false],[3,0,3,"h",false],[1,4,3,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,1,2,"h",true],[0,4,3,"v",false],[5,1,2,"h",false],[3,5,2,"v",false],[3,3,2,"h",false],[3,1,2,"v",false],[1,0,2,"v",false],[1,3,2,"v",false],[3,2,2,"v",false],[5,3,2,"h",false],[0,2,2,"v",false]],par:10,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,5,2,"v",false],[1,2,3,"v",false],[4,0,3,"h",false],[3,5,2,"v",false],[0,0,2,"v",false],[0,2,2,"h",false],[3,3,2,"v",false],[5,3,2,"h",false],[0,4,2,"v",false]],par:11,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,4,3,"v",false],[0,0,2,"h",false],[4,3,3,"h",false],[0,5,2,"v",false],[5,1,2,"h",false],[1,1,3,"h",false],[3,0,3,"v",false],[5,4,2,"h",false]],par:11,d:"Intermediate"},
-    {v:[[2,1,2,"h",true],[2,3,2,"v",false],[1,4,3,"v",false],[4,2,2,"v",false],[3,1,3,"v",false],[1,2,2,"h",false],[0,2,2,"h",false],[4,3,2,"v",false],[0,5,3,"v",false],[5,4,2,"h",false],[1,0,2,"h",false]],par:11,d:"Intermediate"},
-    {v:[[2,2,2,"h",true],[0,5,3,"v",false],[3,4,2,"h",false],[2,1,3,"v",false],[1,1,2,"h",false],[4,2,3,"h",false],[0,0,3,"h",false],[0,4,2,"v",false],[1,0,3,"v",false],[5,1,3,"h",false],[3,2,2,"h",false]],par:11,d:"Intermediate"},
-    {v:[[2,2,2,"h",true],[1,4,3,"v",false],[0,3,2,"h",false],[5,0,3,"h",false],[0,5,2,"v",false],[3,3,2,"v",false],[4,4,2,"h",false],[0,1,3,"v",false],[1,0,3,"v",false]],par:11,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,3,2,"v",false],[4,3,2,"v",false],[2,5,2,"v",false],[3,2,2,"h",false],[0,2,3,"v",false],[4,1,2,"h",false],[4,0,2,"v",false],[0,4,2,"h",false],[4,4,2,"v",false]],par:11,d:"Intermediate"},
-    {v:[[2,1,2,"h",true],[1,3,2,"v",false],[0,5,3,"v",false],[5,2,3,"h",false],[4,3,3,"h",false],[3,1,3,"v",false],[1,0,3,"v",false],[0,2,2,"h",false],[1,1,2,"h",false],[2,4,2,"v",false],[0,0,2,"h",false]],par:11,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,3,2,"v",false],[4,3,2,"h",false],[3,1,3,"v",false],[4,0,2,"v",false],[1,2,2,"v",false],[0,4,3,"v",false],[5,3,3,"h",false],[3,3,2,"h",false],[0,1,2,"h",false],[0,0,2,"v",false]],par:11,d:"Intermediate"},
-    {v:[[2,1,2,"h",true],[1,3,3,"v",false],[3,2,3,"v",false],[1,5,3,"v",false],[1,0,3,"h",false],[3,4,2,"v",false],[0,3,2,"h",false],[4,0,2,"h",false],[5,3,2,"h",false],[0,0,3,"h",false],[2,0,2,"v",false]],par:12,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[5,1,3,"h",false],[0,0,2,"v",false],[1,4,3,"v",false],[4,2,2,"h",false],[3,5,2,"v",false],[0,2,3,"h",false],[3,0,3,"v",false],[1,1,3,"h",false],[0,5,2,"v",false]],par:12,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,3,3,"v",false],[0,5,3,"v",false],[3,0,3,"v",false],[4,4,2,"v",false],[4,2,2,"h",false],[3,1,2,"v",false],[1,2,2,"v",false]],par:12,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[0,2,3,"v",false],[4,0,2,"v",false],[5,2,3,"h",false],[4,2,2,"h",false],[0,3,2,"h",false],[3,3,3,"h",false],[3,1,2,"h",false],[0,5,3,"v",false],[4,1,2,"v",false],[1,4,2,"v",false]],par:12,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,3,3,"v",false],[4,2,2,"h",false],[5,3,3,"h",false],[3,0,2,"v",false],[0,3,2,"h",false],[0,5,2,"v",false],[2,4,3,"v",false],[4,1,2,"v",false]],par:13,d:"Intermediate"},
-    {v:[[2,1,2,"h",true],[1,5,2,"v",false],[4,2,2,"h",false],[5,2,2,"h",false],[1,3,3,"v",false],[3,1,2,"v",false],[3,0,2,"v",false],[2,4,2,"v",false],[4,4,2,"v",false]],par:14,d:"Intermediate"},
-    {v:[[2,1,2,"h",true],[2,5,2,"v",false],[0,0,3,"v",false],[5,2,2,"h",false],[1,4,3,"v",false],[5,4,2,"h",false],[3,2,2,"v",false],[1,1,3,"h",false],[4,3,3,"h",false]],par:14,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,4,3,"v",false],[3,3,2,"v",false],[0,4,2,"h",false],[4,1,2,"v",false],[2,2,2,"v",false],[4,2,2,"v",false],[5,4,2,"h",false],[4,4,2,"h",false],[4,0,2,"v",false],[3,0,2,"h",false]],par:14,d:"Intermediate"},
-    {v:[[2,1,2,"h",true],[2,5,3,"v",false],[4,1,2,"v",false],[4,3,2,"h",false],[0,3,3,"v",false],[3,2,3,"v",false],[1,4,3,"v",false],[0,0,2,"h",false]],par:15,d:"Intermediate"},
-    {v:[[2,2,2,"h",true],[0,4,3,"v",false],[4,3,2,"h",false],[5,1,3,"h",false],[0,0,2,"h",false],[3,4,2,"h",false],[3,2,2,"v",false],[4,5,2,"v",false],[3,0,2,"v",false],[1,0,3,"h",false],[0,2,2,"h",false]],par:15,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[0,2,3,"v",false],[2,5,2,"v",false],[2,3,3,"v",false],[0,3,2,"h",false],[5,2,2,"h",false],[3,0,2,"v",false],[3,4,3,"v",false],[4,1,2,"h",false],[4,5,2,"v",false]],par:15,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,3,3,"v",false],[4,5,2,"v",false],[1,4,3,"v",false],[3,0,3,"h",false],[4,2,2,"v",false],[0,2,3,"h",false],[4,3,2,"h",false],[0,0,2,"v",false]],par:16,d:"Intermediate"},
-    {v:[[2,1,2,"h",true],[0,3,3,"v",false],[3,2,2,"h",false],[1,0,2,"v",false],[4,5,2,"v",false],[0,2,2,"v",false],[4,2,2,"v",false],[0,0,2,"h",false],[1,5,2,"v",false],[4,3,2,"h",false],[5,0,2,"h",false]],par:16,d:"Intermediate"},
-    {v:[[2,0,2,"h",true],[1,4,2,"v",false],[3,1,2,"v",false],[0,3,3,"v",false],[4,3,2,"h",false],[3,5,2,"v",false],[2,2,2,"v",false],[0,4,2,"h",false],[1,5,2,"v",false]],par:16,d:"Intermediate"},
-    {v:[[2,2,2,"h",true],[1,4,3,"v",false],[5,3,2,"h",false],[4,3,2,"h",false],[3,1,2,"v",false],[1,0,3,"v",false],[0,0,3,"h",false],[1,1,2,"h",false],[0,3,2,"v",false],[1,5,3,"v",false],[3,2,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,4,2,"v",false],[3,1,2,"h",false],[0,3,3,"h",false],[3,5,3,"v",false],[1,2,2,"v",false],[5,1,3,"h",false],[1,0,2,"h",false],[4,2,2,"h",false],[1,5,2,"v",false],[3,0,2,"v",false],[3,4,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,3,3,"v",false],[0,4,2,"v",false],[4,0,2,"v",false],[4,2,2,"v",false],[5,3,3,"h",false],[0,2,2,"v",false],[3,5,2,"v",false],[0,5,2,"v",false],[4,1,2,"v",false],[2,4,2,"v",false],[4,3,2,"h",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[2,4,3,"v",false],[0,3,2,"v",false],[1,2,3,"v",false],[4,2,2,"h",false],[4,1,2,"v",false],[5,2,2,"h",false],[3,5,2,"v",false],[4,0,2,"v",false],[0,4,2,"h",false],[2,3,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[2,5,3,"v",false],[3,2,3,"h",false],[4,0,3,"h",false],[1,0,3,"v",false],[5,2,3,"h",false],[4,3,2,"h",false],[1,4,2,"v",false],[0,3,2,"h",false],[5,0,2,"h",false],[0,2,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[2,5,2,"v",false],[2,3,2,"v",false],[4,5,2,"v",false],[4,1,2,"v",false],[0,4,2,"h",false],[4,2,2,"h",false],[0,0,2,"v",false],[3,1,2,"h",false],[1,3,3,"h",false],[2,0,3,"v",false],[3,4,2,"v",false],[5,3,2,"h",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,2,2,"v",false],[3,3,2,"h",false],[0,1,3,"h",false],[2,5,2,"v",false],[0,4,3,"v",false],[3,0,2,"v",false],[1,3,2,"v",false],[3,1,2,"h",false],[4,2,3,"h",false]],par:19,d:"Advanced"},
-    {v:[[2,2,2,"h",true],[2,4,3,"v",false],[2,1,2,"v",false],[5,4,2,"h",false],[0,2,2,"h",false],[3,2,3,"v",false],[1,2,2,"h",false],[4,0,2,"h",false],[1,0,2,"v",false],[0,5,2,"v",false],[0,0,2,"h",false],[4,3,2,"v",false],[2,5,3,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[1,3,2,"v",false],[3,2,2,"v",false],[5,1,3,"h",false],[1,4,3,"v",false],[1,0,2,"v",false],[4,4,2,"h",false],[0,2,3,"h",false],[0,5,2,"v",false],[4,0,2,"v",false],[3,1,2,"v",false],[2,5,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,5,2,"v",false],[0,0,2,"h",false],[3,0,2,"v",false],[2,4,3,"v",false],[5,1,2,"h",false],[2,2,2,"v",false],[3,1,2,"v",false],[0,2,2,"v",false],[4,5,2,"v",false],[2,3,2,"v",false],[4,2,2,"h",false]],par:19,d:"Advanced"},
-    {v:[[2,2,2,"h",true],[1,5,3,"v",false],[2,1,3,"v",false],[5,0,2,"h",false],[0,2,2,"v",false],[4,2,2,"h",false],[1,4,2,"v",false],[5,3,2,"h",false],[2,0,3,"v",false],[4,4,2,"h",false],[0,3,2,"h",false],[0,0,2,"h",false],[1,0,2,"h",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,4,3,"v",false],[0,0,2,"h",false],[0,3,2,"v",false],[4,2,2,"h",false],[4,1,2,"v",false],[3,5,3,"v",false],[1,2,3,"v",false],[5,3,2,"h",false],[0,5,2,"v",false],[3,0,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[0,4,3,"v",false],[1,0,3,"h",false],[3,2,2,"v",false],[2,3,2,"v",false],[3,0,2,"h",false],[4,0,2,"v",false],[4,3,3,"h",false],[0,5,2,"v",false],[5,4,2,"h",false],[2,5,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,2,3,"v",false],[4,2,2,"h",false],[4,5,2,"v",false],[5,2,2,"h",false],[4,4,2,"v",false],[1,4,2,"v",false],[0,1,2,"h",false],[4,1,2,"v",false],[2,3,2,"v",false],[0,5,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[2,5,2,"v",false],[3,0,3,"v",false],[5,3,3,"h",false],[4,2,2,"v",false],[0,1,2,"h",false],[0,4,3,"v",false],[0,5,2,"v",false],[1,1,3,"h",false],[3,1,3,"v",false],[4,4,2,"h",false],[0,0,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[2,5,2,"v",false],[0,4,2,"h",false],[1,2,3,"v",false],[3,1,2,"v",false],[0,3,3,"v",false],[4,5,2,"v",false],[4,3,2,"h",false],[5,1,2,"h",false],[2,4,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,2,2,"v",false],[0,0,3,"h",false],[1,3,2,"h",false],[4,1,2,"h",false],[4,5,2,"v",false],[0,4,2,"h",false],[5,2,2,"h",false],[2,5,2,"v",false],[2,4,3,"v",false],[4,0,2,"v",false]],par:19,d:"Advanced"},
-    {v:[[2,2,2,"h",true],[2,4,3,"v",false],[5,3,2,"h",false],[0,2,3,"h",false],[4,2,2,"v",false],[1,2,2,"h",false],[1,5,2,"v",false],[5,0,2,"h",false],[0,0,3,"v",false],[3,0,3,"h",false]],par:20,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,5,2,"v",false],[0,0,2,"h",false],[0,4,2,"h",false],[3,4,2,"h",false],[5,2,3,"h",false],[2,2,3,"v",false],[3,3,2,"v",false],[4,5,2,"v",false],[1,2,3,"h",false],[4,0,2,"v",false]],par:20,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,5,2,"v",false],[4,3,2,"v",false],[1,3,2,"v",false],[2,4,2,"v",false],[4,0,3,"h",false],[3,5,2,"v",false],[1,1,2,"h",false],[2,2,2,"v",false],[0,4,2,"h",false],[0,0,2,"v",false],[5,0,3,"h",false]],par:20,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[2,5,3,"v",false],[5,4,2,"h",false],[3,3,2,"h",false],[0,2,2,"v",false],[4,0,2,"h",false],[0,3,3,"h",false],[5,2,2,"h",false],[1,3,2,"v",false],[2,0,2,"v",false],[1,0,2,"h",false],[1,4,2,"h",false],[4,2,2,"h",false]],par:20,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,5,2,"v",false],[4,2,3,"h",false],[5,2,2,"h",false],[1,1,3,"h",false],[3,3,2,"h",false],[0,0,2,"h",false],[0,4,3,"v",false],[3,5,2,"v",false],[2,2,2,"v",false],[3,0,2,"v",false]],par:20,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,4,2,"v",false],[0,4,2,"v",false],[5,1,2,"h",false],[1,3,3,"v",false],[0,1,2,"h",false],[4,2,3,"h",false],[0,0,2,"v",false],[1,5,2,"v",false],[5,3,2,"h",false],[4,5,2,"v",false],[3,1,2,"h",false]],par:20,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[2,4,3,"v",false],[0,5,2,"v",false],[3,2,2,"h",false],[1,2,2,"h",false],[3,1,3,"v",false],[0,2,2,"h",false],[0,0,2,"h",false],[5,4,2,"h",false],[4,2,2,"v",false],[4,3,2,"v",false],[4,0,2,"v",false],[2,5,2,"v",false]],par:20,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[1,4,3,"v",false],[5,1,3,"h",false],[3,0,3,"v",false],[3,3,2,"v",false],[0,1,3,"h",false],[3,1,2,"v",false],[0,5,2,"v",false],[2,5,2,"v",false],[1,0,2,"v",false],[1,2,2,"h",false],[4,4,2,"h",false],[3,2,2,"v",false]],par:20,d:"Advanced"},
-    {v:[[2,2,2,"h",true],[0,4,3,"v",false],[4,4,2,"h",false],[2,5,2,"v",false],[0,0,3,"h",false],[4,2,2,"v",false],[5,3,2,"h",false],[5,0,2,"h",false],[3,1,2,"h",false],[1,0,3,"h",false],[4,0,2,"h",false],[0,5,2,"v",false],[2,0,2,"v",false]],par:20,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,3,3,"v",false],[1,4,3,"v",false],[4,3,2,"h",false],[3,0,3,"v",false],[2,5,2,"v",false],[0,5,2,"v",false],[3,1,2,"v",false],[0,1,3,"h",false],[1,2,2,"v",false]],par:21,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[0,2,3,"h",false],[2,5,3,"v",false],[1,4,2,"v",false],[1,2,2,"h",false],[3,3,2,"h",false],[3,0,2,"v",false],[4,4,2,"v",false],[4,1,2,"h",false]],par:21,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[0,4,3,"v",false],[3,0,2,"v",false],[4,4,2,"h",false],[1,3,2,"v",false],[3,4,2,"h",false],[0,2,2,"h",false],[5,3,3,"h",false],[0,0,2,"v",false],[4,1,2,"v",false],[3,3,2,"v",false],[4,2,2,"v",false],[0,5,3,"v",false]],par:21,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,3,3,"h",false],[3,1,2,"h",false],[4,2,3,"h",false],[2,5,3,"v",false],[0,0,3,"v",false],[5,2,2,"h",false],[5,4,2,"h",false],[1,2,2,"h",false],[3,3,2,"h",false],[4,1,2,"v",false],[0,1,2,"h",false]],par:21,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[2,5,3,"v",false],[5,1,3,"h",false],[3,1,3,"h",false],[4,0,3,"h",false],[0,3,3,"v",false],[1,4,2,"v",false],[3,4,3,"v",false],[1,2,2,"v",false],[0,0,2,"v",false],[0,4,2,"h",false]],par:21,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[0,2,3,"v",false],[0,5,3,"v",false],[1,0,2,"h",false],[5,2,2,"h",false],[3,0,2,"v",false],[1,3,3,"v",false],[0,4,2,"v",false],[3,1,2,"h",false]],par:21,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[0,2,3,"v",false],[5,1,2,"h",false],[3,2,3,"h",false],[4,1,2,"h",false],[3,5,3,"v",false],[4,0,2,"v",false],[0,4,2,"h",false],[1,3,2,"v",false],[0,1,2,"v",false]],par:21,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[1,4,3,"v",false],[5,2,2,"h",false],[0,2,3,"h",false],[3,0,2,"h",false],[2,5,2,"v",false],[4,3,3,"h",false],[3,2,2,"v",false],[0,5,2,"v",false],[0,0,3,"v",false]],par:21,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,5,3,"v",false],[4,3,2,"v",false],[0,2,3,"h",false],[4,4,2,"h",false],[1,2,2,"h",false],[2,3,2,"v",false],[2,2,2,"v",false],[4,0,2,"v",false],[5,4,2,"h",false]],par:22,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[2,4,3,"v",false],[3,3,2,"v",false],[1,4,2,"h",false],[0,1,2,"h",false],[5,0,2,"h",false],[4,5,2,"v",false],[5,3,2,"h",false],[0,3,2,"v",false],[3,0,3,"h",false],[0,4,2,"h",false],[4,2,2,"v",false],[4,0,2,"h",false]],par:22,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[1,5,2,"v",false],[0,4,3,"v",false],[0,2,2,"v",false],[0,0,2,"h",false],[3,3,2,"h",false],[5,4,2,"h",false],[5,2,2,"h",false],[3,1,2,"v",false],[1,0,2,"v",false],[0,3,2,"v",false],[3,2,2,"v",false],[4,4,2,"h",false]],par:23,d:"Advanced"},
-    {v:[[2,1,2,"h",true],[1,3,2,"v",false],[5,2,2,"h",false],[3,0,2,"h",false],[3,2,2,"v",false],[0,1,2,"h",false],[1,5,2,"v",false],[4,3,3,"h",false],[0,3,3,"h",false],[1,4,2,"v",false],[0,0,3,"v",false],[1,1,2,"h",false]],par:23,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[1,2,3,"v",false],[3,3,2,"h",false],[0,0,2,"h",false],[0,4,2,"h",false],[4,1,2,"h",false],[3,0,2,"v",false],[3,5,3,"v",false],[0,3,3,"v",false]],par:23,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[3,3,2,"v",false],[4,1,2,"h",false],[4,4,2,"v",false],[3,0,2,"v",false],[0,0,3,"h",false],[2,5,2,"v",false],[0,3,2,"h",false],[1,0,3,"h",false],[1,3,2,"h",false],[5,1,3,"h",false],[4,5,2,"v",false]],par:24,d:"Advanced"},
-    {v:[[2,0,2,"h",true],[2,3,3,"v",false],[2,4,2,"v",false],[1,5,2,"v",false],[4,5,2,"v",false],[1,1,2,"h",false],[4,0,3,"h",false],[0,4,2,"v",false],[0,0,2,"v",false],[5,2,3,"h",false],[3,0,2,"h",false],[2,2,2,"v",false],[0,2,2,"h",false]],par:23,d:"Expert"},
-    {v:[[2,2,2,"h",true],[1,5,2,"v",false],[4,3,2,"v",false],[1,2,2,"h",false],[2,0,3,"v",false],[5,0,2,"h",false],[0,4,3,"v",false],[3,1,3,"h",false],[5,4,2,"h",false],[0,0,2,"h",false],[4,2,2,"v",false],[4,4,2,"h",false]],par:23,d:"Expert"},
-    {v:[[2,2,2,"h",true],[2,4,2,"v",false],[3,2,2,"h",false],[1,1,2,"h",false],[5,3,3,"h",false],[0,0,3,"v",false],[0,3,3,"h",false],[2,5,3,"v",false],[3,0,2,"h",false],[0,1,2,"h",false],[4,2,3,"h",false],[4,1,2,"v",false]],par:23,d:"Expert"},
-    {v:[[2,0,2,"h",true],[0,2,3,"v",false],[2,3,2,"v",false],[2,4,2,"v",false],[1,5,2,"v",false],[5,2,3,"h",false],[3,0,2,"v",false],[0,1,2,"v",false],[0,3,2,"v",false],[4,1,2,"h",false],[4,5,2,"v",false],[3,1,2,"h",false]],par:23,d:"Expert"},
-    {v:[[2,1,2,"h",true],[1,5,2,"v",false],[3,5,2,"v",false],[1,4,3,"v",false],[5,3,3,"h",false],[4,2,2,"v",false],[3,2,2,"h",false],[4,3,2,"h",false],[4,1,2,"v",false],[3,0,2,"v",false],[1,1,3,"h",false],[0,4,2,"h",false],[0,0,2,"v",false]],par:23,d:"Expert"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,2,"v",false],[2,4,2,"v",false],[4,3,3,"h",false],[1,0,2,"h",false],[3,0,2,"v",false],[4,1,2,"h",false],[0,2,3,"h",false],[5,1,3,"h",false],[0,5,3,"v",false],[5,4,2,"h",false]],par:23,d:"Expert"},
-    {v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,3,2,"v",false],[2,4,2,"v",false],[4,3,2,"h",false],[1,4,2,"h",false],[5,3,3,"h",false],[4,0,2,"v",false],[0,3,2,"h",false],[3,0,2,"h",false],[2,5,3,"v",false],[5,1,2,"h",false],[0,0,3,"h",false]],par:24,d:"Expert"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[0,3,3,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[5,3,2,"h",false],[0,0,3,"h",false],[4,3,2,"h",false],[4,5,2,"v",false],[3,1,2,"v",false],[3,0,3,"v",false]],par:24,d:"Expert"},
-    {v:[[2,0,2,"h",true],[2,3,2,"v",false],[2,5,2,"v",false],[3,0,2,"h",false],[4,0,3,"h",false],[1,2,3,"h",false],[0,3,2,"h",false],[5,0,2,"h",false],[3,4,3,"v",false],[2,2,2,"v",false],[0,1,2,"h",false],[0,0,2,"v",false]],par:24,d:"Expert"},
-    {v:[[2,2,2,"h",true],[1,4,2,"v",false],[2,5,2,"v",false],[4,4,2,"v",false],[0,3,2,"h",false],[4,0,3,"h",false],[1,0,2,"v",false],[3,3,3,"v",false],[3,0,3,"h",false],[0,5,2,"v",false],[0,2,2,"v",false]],par:24,d:"Expert"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,2,"v",false],[1,4,2,"v",false],[1,5,2,"v",false],[4,1,2,"h",false],[4,0,2,"v",false],[3,3,2,"v",false],[1,0,3,"h",false],[3,0,2,"h",false],[0,1,2,"h",false],[4,4,2,"v",false],[3,5,2,"v",false]],par:24,d:"Expert"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[4,3,2,"v",false],[1,1,3,"h",false],[4,4,2,"h",false],[3,0,2,"v",false],[0,4,2,"v",false],[0,1,3,"h",false],[2,3,2,"v",false],[5,0,2,"h",false]],par:25,d:"Expert"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,2,"v",false],[1,5,2,"v",false],[4,1,2,"v",false],[0,2,3,"h",false],[1,4,3,"v",false],[5,4,2,"h",false],[4,2,2,"h",false],[3,5,2,"v",false],[0,0,2,"v",false],[1,1,2,"h",false],[3,0,3,"v",false]],par:25,d:"Expert"},
-    {v:[[2,0,2,"h",true],[1,2,2,"v",false],[1,3,3,"v",false],[4,0,2,"v",false],[0,3,2,"h",false],[2,4,2,"v",false],[5,2,3,"h",false],[3,1,2,"h",false],[3,5,2,"v",false],[1,0,2,"h",false],[0,5,2,"v",false],[0,0,3,"h",false],[4,1,2,"h",false]],par:25,d:"Expert"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[0,0,3,"h",false],[5,1,3,"h",false],[4,0,2,"v",false],[1,3,2,"h",false],[0,5,2,"v",false],[5,4,2,"h",false],[3,3,2,"v",false],[4,4,2,"h",false],[1,0,3,"h",false]],par:25,d:"Expert"},
-    {v:[[2,0,2,"h",true],[1,2,2,"v",false],[0,3,3,"v",false],[1,4,2,"v",false],[1,5,2,"v",false],[3,5,2,"v",false],[3,0,3,"h",false],[0,1,2,"h",false],[4,1,3,"h",false],[5,1,3,"h",false],[0,0,2,"v",false],[4,4,2,"v",false],[3,3,2,"h",false]],par:26,d:"Expert"},
-    {v:[[2,1,2,"h",true],[0,3,3,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[0,0,2,"v",false],[0,2,2,"v",false],[4,1,3,"h",false],[5,0,3,"h",false],[3,0,2,"h",false],[1,4,2,"h",false],[4,4,2,"v",false]],par:27,d:"Expert"},
-    {v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,3,2,"v",false],[2,5,2,"v",false],[5,3,2,"h",false],[0,3,2,"v",false],[1,4,2,"h",false],[4,1,3,"h",false],[3,0,2,"v",false],[4,5,2,"v",false]],par:27,d:"Expert"},
-    {v:[[2,0,2,"h",true],[1,2,2,"v",false],[1,4,2,"v",false],[2,5,2,"v",false],[1,0,2,"h",false],[3,3,2,"h",false],[0,2,3,"h",false],[4,1,2,"v",false],[3,2,2,"v",false],[4,4,2,"h",false],[0,5,2,"v",false],[5,2,3,"h",false],[3,0,2,"v",false]],par:27,d:"Expert"},
-    {v:[[2,0,2,"h",true],[1,2,2,"v",false],[1,3,2,"v",false],[1,5,2,"v",false],[0,1,2,"h",false],[5,0,2,"h",false],[1,4,3,"v",false],[0,4,2,"h",false],[3,2,2,"h",false],[4,5,2,"v",false],[4,1,3,"h",false],[5,3,2,"h",false],[0,0,2,"v",false]],par:27,d:"Expert"},
-  ];
+{v:[[2,0,2,"h",true],[1,4,2,"v",false],[3,4,2,"h",false],[0,3,2,"h",false],[5,0,3,"h",false],[0,5,2,"v",false],[1,2,3,"v",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,4,2,"v",false],[1,5,3,"v",false],[3,1,3,"v",false],[5,4,2,"h",false],[1,3,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,3,"v",false],[5,3,2,"h",false],[4,3,2,"h",false],[1,4,2,"h",false]],par:5,d:"Beginner"},
+{v:[[2,2,2,"h",true],[0,4,3,"v",false],[4,2,3,"h",false],[1,5,2,"v",false],[3,3,3,"h",false],[0,1,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[3,0,2,"v",false],[3,1,3,"h",false],[4,2,2,"h",false],[1,2,2,"h",false],[4,4,2,"h",false]],par:5,d:"Beginner"},
+{v:[[2,2,2,"h",true],[2,5,2,"v",false],[3,0,2,"h",false],[4,2,2,"v",false],[1,4,3,"v",false],[0,0,2,"h",false],[5,0,2,"h",false],[5,3,2,"h",false],[1,1,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[2,4,3,"v",false],[3,2,2,"h",false],[4,0,2,"v",false],[2,0,2,"v",false],[3,1,3,"v",false],[1,0,3,"h",false],[5,3,3,"h",false]],par:5,d:"Beginner"},
+{v:[[2,2,2,"h",true],[1,5,3,"v",false],[1,4,2,"v",false],[3,2,2,"v",false],[3,0,2,"v",false],[5,4,2,"h",false],[1,0,3,"h",false],[4,3,2,"v",false],[0,4,2,"h",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[4,1,2,"v",false],[1,5,2,"v",false],[2,4,3,"v",false],[3,0,2,"h",false],[1,2,2,"v",false],[4,2,2,"h",false],[3,5,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[5,4,2,"h",false],[0,0,3,"v",false],[3,0,3,"v",false],[2,3,3,"v",false],[0,1,3,"h",false],[4,1,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[1,4,2,"v",false],[4,2,2,"h",false],[3,1,2,"v",false],[3,4,2,"h",false],[1,0,2,"v",false],[0,3,2,"h",false],[1,3,3,"v",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,5,2,"v",false],[3,1,3,"h",false],[0,2,3,"v",false],[4,5,2,"v",false],[0,0,2,"h",false],[1,3,2,"h",false],[2,4,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[0,5,3,"v",false],[3,0,3,"v",false],[4,2,2,"h",false],[2,4,3,"v",false],[5,1,2,"h",false],[1,0,2,"h",false],[0,3,3,"v",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,3,3,"v",false],[5,3,2,"h",false],[0,4,2,"v",false],[2,2,3,"v",false],[0,2,2,"h",false],[0,0,2,"h",false],[5,0,2,"h",false],[2,5,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[2,5,2,"v",false],[0,0,2,"h",false],[4,4,2,"h",false],[4,1,2,"v",false],[4,3,2,"v",false],[2,0,2,"v",false],[1,4,3,"v",false],[1,0,2,"h",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[3,5,3,"v",false],[5,3,2,"h",false],[3,2,2,"v",false],[1,4,3,"v",false],[0,4,2,"h",false],[4,0,2,"h",false],[1,2,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[1,3,2,"v",false],[0,4,2,"h",false],[1,4,2,"v",false],[2,5,2,"v",false],[3,3,2,"v",false],[5,3,2,"h",false],[0,0,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[3,0,2,"h",false],[5,4,2,"h",false],[0,2,2,"v",false],[1,0,2,"h",false],[1,3,2,"v",false],[5,1,2,"h",false],[3,2,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,2,2,"h",true],[1,5,3,"v",false],[5,3,3,"h",false],[0,2,2,"h",false],[3,0,3,"v",false],[3,2,2,"h",false],[4,2,2,"v",false],[1,1,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,2,3,"v",false],[0,2,2,"v",false],[1,3,3,"v",false],[5,3,2,"h",false],[2,4,2,"v",false],[4,0,2,"v",false],[1,4,2,"h",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[1,4,3,"v",false],[0,3,3,"v",false],[4,1,2,"v",false],[5,3,2,"h",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[5,2,3,"h",false],[2,3,3,"v",false],[1,4,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[2,5,2,"v",false],[0,3,3,"v",false],[5,0,2,"h",false],[4,3,2,"h",false],[3,3,2,"h",false],[4,0,3,"h",false],[0,0,2,"h",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,5,2,"v",false],[4,0,3,"h",false],[2,4,3,"v",false],[3,0,3,"h",false],[5,1,2,"h",false],[1,2,3,"h",false],[5,3,2,"h",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,0,2,"v",false],[0,3,3,"v",false],[4,4,2,"h",false],[4,2,2,"h",false],[5,0,2,"h",false],[1,5,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[0,1,2,"v",false],[3,0,2,"h",false],[0,3,2,"v",false],[2,5,3,"v",false],[5,2,3,"h",false],[2,4,3,"v",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,2,3,"v",false],[0,0,2,"h",false],[1,0,3,"h",false],[2,3,2,"v",false],[4,5,2,"v",false],[1,5,2,"v",false],[4,0,2,"v",false],[2,4,3,"v",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[2,5,3,"v",false],[1,1,2,"h",false],[3,2,2,"h",false],[1,3,2,"h",false],[4,2,2,"v",false],[4,3,2,"h",false],[3,0,2,"v",false],[2,4,2,"v",false]],par:5,d:"Beginner"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[5,0,3,"h",false],[4,1,2,"h",false],[3,1,3,"h",false],[2,5,2,"v",false],[0,4,3,"v",false],[0,1,3,"h",false]],par:5,d:"Beginner"},
+{v:[[2,1,2,"h",true],[1,4,2,"v",false],[1,3,3,"v",false],[3,0,2,"h",false],[0,1,2,"v",false],[2,5,2,"v",false],[4,2,3,"h",false],[5,3,3,"h",false]],par:6,d:"Beginner"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[3,0,3,"h",false],[0,3,2,"h",false],[0,0,2,"v",false],[5,1,2,"h",false],[0,2,3,"v",false],[5,3,3,"h",false],[1,4,2,"h",false]],par:6,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[0,2,3,"h",false],[0,1,2,"v",false],[4,5,2,"v",false],[1,2,2,"v",false],[5,2,3,"h",false],[1,4,2,"v",false],[4,1,3,"h",false]],par:6,d:"Beginner"},
+{v:[[2,1,2,"h",true],[1,4,3,"v",false],[3,1,3,"v",false],[4,4,2,"h",false],[4,2,2,"h",false]],par:6,d:"Beginner"},
+{v:[[2,1,2,"h",true],[1,3,3,"v",false],[0,1,2,"v",false],[4,3,2,"h",false],[0,4,3,"v",false],[2,0,2,"v",false],[4,2,2,"v",false]],par:7,d:"Beginner"},
+{v:[[2,0,2,"h",true],[0,4,3,"v",false],[0,3,2,"v",false],[3,0,2,"v",false],[3,1,2,"h",false],[4,2,2,"v",false],[1,1,2,"h",false],[4,1,2,"v",false],[4,4,2,"h",false]],par:7,d:"Beginner"},
+{v:[[2,0,2,"h",true],[0,3,3,"v",false],[3,5,2,"v",false],[1,4,2,"h",false],[2,2,3,"v",false],[3,0,2,"v",false],[4,3,2,"h",false],[1,1,2,"h",false],[5,2,2,"h",false]],par:8,d:"Beginner"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[3,3,2,"v",false],[3,4,2,"h",false],[1,1,3,"h",false],[3,1,2,"h",false],[2,0,2,"v",false],[4,4,2,"h",false]],par:8,d:"Beginner"},
+{v:[[2,2,2,"h",true],[0,5,3,"v",false],[5,4,2,"h",false],[1,4,3,"v",false],[3,2,3,"v",false],[2,1,2,"v",false],[0,1,3,"h",false]],par:8,d:"Beginner"},
+{v:[[2,0,2,"h",true],[2,5,3,"v",false],[4,3,2,"h",false],[3,2,3,"h",false],[0,4,3,"v",false],[4,1,2,"v",false],[0,2,2,"v",false],[5,2,3,"h",false],[0,3,2,"v",false]],par:8,d:"Beginner"},
+{v:[[2,2,2,"h",true],[0,4,3,"v",false],[2,1,3,"v",false],[5,3,2,"h",false],[4,3,2,"h",false],[0,1,3,"h",false],[4,2,2,"v",false],[3,0,3,"v",false]],par:9,d:"Beginner"},
+{v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,0,3,"h",false],[3,4,2,"h",false],[4,2,3,"h",false],[1,1,3,"h",false],[1,0,3,"v",false],[0,3,2,"h",false],[5,2,2,"h",false],[3,1,2,"v",false],[2,3,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[0,0,2,"h",false],[1,2,2,"v",false],[3,4,2,"h",false],[5,2,2,"h",false],[5,4,2,"h",false],[3,2,2,"v",false],[0,4,2,"v",false],[3,3,2,"v",false],[0,5,3,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[3,4,2,"v",false],[0,2,3,"v",false],[3,0,3,"h",false],[5,3,2,"h",false],[3,5,3,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[2,5,2,"v",false],[3,3,2,"h",false],[0,3,2,"v",false],[1,4,2,"v",false],[0,1,3,"v",false],[0,2,2,"v",false],[0,4,2,"h",false],[4,5,2,"v",false],[5,0,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,4,3,"v",false],[5,3,2,"h",false],[3,5,3,"v",false],[4,1,2,"v",false],[1,2,3,"v",false],[4,3,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[0,2,3,"h",false],[0,5,2,"v",false],[2,2,2,"v",false],[0,0,2,"h",false],[4,2,2,"v",false],[2,4,2,"v",false],[3,0,2,"h",false],[3,5,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[3,5,3,"v",false],[2,3,2,"v",false],[4,1,2,"v",false],[0,2,2,"v",false],[4,2,2,"h",false],[1,3,2,"h",false],[4,4,2,"v",false],[1,5,2,"v",false],[4,0,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[0,5,3,"v",false],[1,2,2,"v",false],[5,2,2,"h",false],[3,2,2,"h",false],[4,1,2,"v",false],[1,3,2,"h",false],[5,4,2,"h",false],[0,2,2,"h",false],[3,4,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,5,3,"v",false],[4,0,2,"v",false],[1,2,3,"v",false],[5,3,3,"h",false],[4,2,2,"h",false],[3,4,2,"v",false],[1,3,2,"v",false],[3,0,2,"h",false],[0,2,2,"h",false],[1,0,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,2,3,"v",false],[0,4,2,"v",false],[5,2,3,"h",false],[2,5,3,"v",false],[4,2,3,"h",false],[3,0,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[0,5,3,"v",false],[1,0,3,"v",false],[3,2,2,"v",false],[2,1,3,"v",false],[4,3,2,"h",false],[0,4,3,"v",false],[5,3,2,"h",false],[1,2,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,5,3,"v",false],[3,1,2,"v",false],[4,4,2,"v",false],[1,0,2,"h",false],[2,2,2,"v",false],[0,4,2,"h",false],[0,2,2,"v",false],[0,3,2,"v",false],[2,3,3,"v",false],[2,4,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,4,3,"v",false],[1,1,3,"h",false],[4,3,3,"h",false],[3,2,2,"v",false],[0,2,3,"h",false],[0,5,3,"v",false],[4,0,2,"v",false],[2,0,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[0,5,3,"v",false],[5,1,2,"h",false],[4,4,2,"h",false],[1,2,2,"v",false],[1,3,3,"v",false],[3,0,3,"v",false],[3,1,2,"v",false],[0,3,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,4,3,"v",false],[2,1,3,"v",false],[5,2,2,"h",false],[0,3,2,"h",false],[1,1,3,"h",false],[2,0,2,"v",false],[0,0,2,"v",false],[2,5,3,"v",false],[4,3,2,"h",false],[3,2,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,1,2,"h",false],[5,1,3,"h",false],[1,5,2,"v",false],[0,3,3,"v",false],[3,3,2,"h",false],[3,2,2,"v",false],[3,5,2,"v",false],[5,4,2,"h",false],[4,3,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,5,2,"v",false],[4,2,2,"v",false],[1,1,2,"v",false],[4,3,2,"h",false],[3,0,3,"h",false],[1,4,3,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[5,1,2,"h",false],[3,5,2,"v",false],[3,3,2,"h",false],[3,1,2,"v",false],[1,0,2,"v",false],[1,3,2,"v",false],[3,2,2,"v",false],[5,3,2,"h",false],[0,2,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,5,3,"v",false],[4,4,2,"h",false],[5,3,2,"h",false],[2,0,3,"v",false],[0,2,2,"h",false],[3,3,2,"v",false],[0,1,2,"v",false],[2,4,2,"v",false],[1,2,2,"h",false],[4,1,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[1,2,2,"h",false],[0,0,2,"v",false],[4,2,3,"h",false],[3,1,2,"v",false],[5,4,2,"h",false],[0,2,3,"h",false],[2,2,2,"v",false],[2,4,2,"v",false],[3,5,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,4,2,"v",false],[0,5,3,"v",false],[4,0,2,"v",false],[0,0,3,"h",false],[4,3,3,"h",false],[0,3,2,"v",false],[5,1,2,"h",false],[5,3,3,"h",false],[1,1,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[2,5,3,"v",false],[4,2,2,"h",false],[3,1,3,"v",false],[4,4,2,"v",false],[3,3,2,"h",false],[0,3,2,"h",false],[4,0,2,"v",false],[5,2,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,4,3,"v",false],[0,1,3,"h",false],[0,5,2,"v",false],[3,3,3,"v",false],[1,2,2,"v",false],[2,5,2,"v",false],[3,0,3,"h",false],[5,0,3,"h",false],[0,0,2,"v",false],[4,0,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,4,2,"v",false],[4,3,2,"v",false],[3,0,3,"v",false],[4,4,2,"h",false],[0,0,3,"v",false],[1,2,2,"h",false],[0,3,2,"h",false],[3,2,2,"v",false],[0,5,3,"v",false],[0,1,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[3,2,2,"v",false],[0,1,3,"h",false],[3,4,2,"h",false],[1,4,2,"v",false],[1,3,3,"v",false],[1,5,2,"v",false],[5,4,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,5,3,"v",false],[0,4,3,"v",false],[0,1,2,"h",false],[2,0,2,"v",false],[1,1,2,"h",false],[4,3,2,"h",false],[4,2,2,"v",false],[2,1,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,2,2,"v",false],[3,1,3,"v",false],[1,5,3,"v",false],[2,0,3,"v",false],[1,0,2,"h",false],[5,4,2,"h",false],[4,4,2,"h",false],[4,2,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,3,2,"v",false],[2,5,2,"v",false],[4,5,2,"v",false],[5,0,2,"h",false],[0,2,2,"h",false],[4,2,2,"v",false],[0,1,2,"v",false],[3,3,3,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[4,3,2,"v",false],[3,1,3,"h",false],[5,1,2,"h",false],[4,1,2,"h",false],[4,0,2,"v",false],[1,1,2,"h",false],[2,5,2,"v",false],[4,4,2,"h",false],[1,0,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[1,0,3,"v",false],[0,0,2,"h",false],[4,3,3,"h",false],[1,3,3,"v",false],[5,0,2,"h",false],[3,2,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,3,2,"v",false],[4,3,3,"h",false],[1,5,2,"v",false],[0,4,3,"v",false],[3,1,2,"v",false],[3,2,2,"h",false],[3,4,2,"h",false],[5,0,3,"h",false],[1,0,3,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[0,4,3,"v",false],[2,5,2,"v",false],[4,3,2,"h",false],[1,1,2,"h",false],[1,0,2,"v",false],[3,2,2,"v",false],[0,2,2,"h",false],[4,1,2,"v",false],[0,0,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,5,3,"v",false],[1,3,2,"h",false],[5,2,2,"h",false],[1,1,2,"h",false],[4,1,2,"h",false],[0,0,2,"v",false],[5,4,2,"h",false],[4,3,3,"h",false],[2,4,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[1,2,2,"v",false],[0,0,3,"h",false],[1,5,3,"v",false],[4,1,2,"h",false],[1,4,2,"v",false],[5,4,2,"h",false],[4,3,3,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[0,5,3,"v",false],[5,3,3,"h",false],[0,3,2,"h",false],[4,2,3,"h",false],[2,3,2,"v",false],[0,2,2,"v",false],[2,4,2,"v",false],[3,1,2,"v",false],[3,0,2,"v",false],[1,3,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[0,5,3,"v",false],[0,2,3,"h",false],[4,3,2,"v",false],[1,0,3,"v",false],[3,2,2,"h",false],[1,1,2,"h",false],[4,2,2,"v",false],[5,4,2,"h",false],[1,4,3,"v",false],[3,1,3,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,5,2,"v",false],[1,2,2,"v",false],[2,3,3,"v",false],[4,4,2,"h",false],[5,0,3,"h",false],[0,1,2,"h",false],[1,4,3,"v",false],[3,2,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,4,3,"v",false],[0,2,2,"v",false],[4,3,2,"h",false],[0,3,2,"v",false],[3,1,3,"h",false],[0,0,2,"h",false],[4,2,2,"v",false],[1,5,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,2,2,"h",false],[1,5,3,"v",false],[0,4,2,"h",false],[5,4,2,"h",false],[4,3,2,"v",false],[1,0,2,"h",false],[4,1,2,"h",false],[4,4,2,"h",false],[3,0,3,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,5,2,"v",false],[4,3,3,"h",false],[4,2,2,"v",false],[0,2,2,"h",false],[3,2,2,"h",false],[0,1,2,"v",false],[0,4,3,"v",false],[5,3,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,5,3,"v",false],[5,3,3,"h",false],[0,2,2,"h",false],[5,1,2,"h",false],[1,2,3,"v",false],[4,0,3,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,5,3,"v",false],[4,3,2,"v",false],[0,3,2,"h",false],[3,4,2,"v",false],[1,0,2,"v",false],[5,0,2,"h",false],[3,0,2,"v",false],[5,4,2,"h",false],[2,3,2,"v",false],[1,2,3,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,5,3,"v",false],[0,0,3,"h",false],[3,0,3,"h",false],[4,2,2,"v",false],[1,1,2,"h",false],[1,4,3,"v",false],[5,4,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,5,2,"v",false],[3,4,2,"h",false],[4,3,3,"h",false],[0,1,2,"v",false],[0,4,2,"h",false],[3,0,2,"v",false],[0,3,3,"v",false],[4,2,2,"v",false],[3,1,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,3,2,"v",false],[0,3,2,"h",false],[5,4,2,"h",false],[3,2,2,"v",false],[1,2,2,"h",false],[4,0,2,"v",false],[4,3,3,"h",false],[1,5,3,"v",false],[1,4,2,"v",false],[4,1,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[3,0,2,"h",false],[4,2,3,"h",false],[0,4,2,"h",false],[5,2,2,"h",false],[1,2,3,"v",false],[0,0,3,"h",false],[4,5,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[0,4,3,"v",false],[3,1,2,"v",false],[4,4,2,"h",false],[3,2,2,"h",false],[5,1,2,"h",false],[4,3,2,"v",false],[1,0,2,"v",false],[0,2,2,"v",false],[1,1,2,"v",false],[1,5,3,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[4,2,3,"h",false],[3,3,2,"h",false],[1,4,2,"h",false],[3,1,3,"v",false],[0,2,3,"h",false],[3,5,2,"v",false],[5,3,3,"h",false],[1,2,2,"v",false],[3,0,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,4,3,"v",false],[4,1,2,"v",false],[0,2,2,"v",false],[0,5,3,"v",false],[3,1,3,"h",false],[5,3,3,"h",false],[4,0,2,"v",false],[1,3,2,"v",false],[0,0,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,4,3,"v",false],[0,1,2,"h",false],[5,2,2,"h",false],[1,5,2,"v",false],[3,2,2,"v",false],[1,3,3,"v",false],[2,0,2,"v",false],[4,4,2,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[2,5,3,"v",false],[4,3,2,"h",false],[5,2,3,"h",false],[0,0,2,"v",false],[2,0,2,"v",false],[3,2,2,"v",false],[0,2,2,"h",false],[0,4,3,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,3,2,"v",false],[4,0,2,"v",false],[1,4,2,"v",false],[5,2,3,"h",false],[1,0,2,"v",false],[0,1,2,"v",false],[1,5,2,"v",false],[0,3,3,"h",false],[4,4,2,"h",false],[4,1,3,"h",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,4,2,"v",false],[5,0,2,"h",false],[3,0,2,"v",false],[0,5,2,"v",false],[0,1,2,"v",false],[3,2,3,"h",false],[1,3,2,"v",false],[0,2,3,"h",false],[4,1,3,"h",false],[1,2,2,"v",false]],par:10,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,5,2,"v",false],[1,2,3,"v",false],[4,0,3,"h",false],[3,5,2,"v",false],[0,0,2,"v",false],[0,2,2,"h",false],[3,3,2,"v",false],[5,3,2,"h",false],[0,4,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,4,3,"v",false],[0,0,2,"h",false],[4,3,3,"h",false],[0,5,2,"v",false],[5,1,2,"h",false],[1,1,3,"h",false],[3,0,3,"v",false],[5,4,2,"h",false]],par:11,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,3,2,"v",false],[1,4,3,"v",false],[4,2,2,"v",false],[3,1,3,"v",false],[1,2,2,"h",false],[0,2,2,"h",false],[4,3,2,"v",false],[0,5,3,"v",false],[5,4,2,"h",false],[1,0,2,"h",false]],par:11,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[0,5,3,"v",false],[3,4,2,"h",false],[2,1,3,"v",false],[1,1,2,"h",false],[4,2,3,"h",false],[0,0,3,"h",false],[0,4,2,"v",false],[1,0,3,"v",false],[5,1,3,"h",false],[3,2,2,"h",false]],par:11,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,4,3,"v",false],[0,3,2,"h",false],[5,0,3,"h",false],[0,5,2,"v",false],[3,3,2,"v",false],[4,4,2,"h",false],[0,1,3,"v",false],[1,0,3,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[4,3,2,"v",false],[2,5,2,"v",false],[3,2,2,"h",false],[0,2,3,"v",false],[4,1,2,"h",false],[4,0,2,"v",false],[0,4,2,"h",false],[4,4,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,3,2,"v",false],[0,5,3,"v",false],[5,2,3,"h",false],[4,3,3,"h",false],[3,1,3,"v",false],[1,0,3,"v",false],[0,2,2,"h",false],[1,1,2,"h",false],[2,4,2,"v",false],[0,0,2,"h",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[4,3,2,"h",false],[3,1,3,"v",false],[4,0,2,"v",false],[1,2,2,"v",false],[0,4,3,"v",false],[5,3,3,"h",false],[3,3,2,"h",false],[0,1,2,"h",false],[0,0,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[0,2,3,"v",false],[1,5,2,"v",false],[5,1,3,"h",false],[4,1,2,"h",false],[3,0,2,"h",false],[3,5,3,"v",false],[1,3,2,"h",false]],par:11,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,5,2,"v",false],[0,3,3,"v",false],[4,2,2,"v",false],[4,3,2,"h",false],[1,1,2,"h",false],[0,0,3,"h",false],[1,0,3,"v",false],[0,4,3,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,4,3,"v",false],[4,0,2,"h",false],[1,1,2,"h",false],[5,2,3,"h",false],[0,4,2,"h",false],[3,3,2,"v",false],[2,0,2,"v",false],[4,4,2,"h",false],[3,2,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,4,3,"v",false],[5,1,2,"h",false],[4,5,2,"v",false],[0,4,2,"h",false],[0,0,3,"h",false],[4,3,2,"h",false],[1,0,3,"h",false],[3,0,2,"v",false],[5,3,2,"h",false],[3,2,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[0,4,3,"v",false],[3,1,3,"h",false],[4,3,2,"v",false],[0,0,2,"h",false],[4,4,2,"h",false],[0,2,2,"h",false],[1,0,2,"v",false],[1,1,3,"h",false],[4,1,2,"v",false],[0,5,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,5,2,"v",false],[0,2,3,"v",false],[3,1,2,"v",false],[3,3,2,"h",false],[0,4,3,"v",false],[5,2,2,"h",false]],par:11,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,4,3,"v",false],[4,1,2,"v",false],[3,3,3,"v",false],[1,0,2,"v",false],[3,0,2,"v",false],[0,1,2,"h",false],[4,4,2,"h",false],[4,2,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,2,3,"v",false],[3,4,2,"v",false],[4,2,2,"h",false],[5,1,2,"h",false],[1,3,3,"h",false],[0,3,2,"h",false],[0,1,2,"v",false],[0,0,2,"v",false],[2,3,2,"v",false],[4,0,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,4,3,"v",false],[0,5,2,"v",false],[3,3,3,"v",false],[1,0,2,"v",false],[1,2,3,"h",false],[5,4,2,"h",false],[0,0,2,"h",false],[2,5,2,"v",false],[3,2,3,"v",false],[4,0,2,"h",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,5,3,"v",false],[2,4,2,"v",false],[4,1,2,"h",false],[0,2,3,"v",false],[5,1,2,"h",false],[3,0,3,"h",false],[0,3,2,"h",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[1,0,2,"h",false],[1,3,2,"h",false],[2,5,2,"v",false],[0,2,2,"h",false],[4,1,3,"h",false],[1,2,3,"v",false],[5,1,2,"h",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,2,3,"v",false],[0,2,3,"h",false],[3,1,2,"v",false],[0,0,2,"v",false],[4,2,2,"h",false],[5,2,2,"h",false],[1,4,3,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[0,0,3,"h",false],[0,5,2,"v",false],[4,0,2,"v",false],[3,2,2,"h",false],[1,0,3,"h",false],[2,5,2,"v",false],[4,4,2,"h",false],[4,2,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,4,2,"v",false],[0,2,3,"v",false],[5,3,2,"h",false],[0,3,3,"h",false],[4,1,3,"h",false],[0,1,2,"v",false],[5,1,2,"h",false],[3,1,3,"h",false],[2,5,2,"v",false]],par:11,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,3,3,"v",false],[3,2,3,"v",false],[1,5,3,"v",false],[1,0,3,"h",false],[3,4,2,"v",false],[0,3,2,"h",false],[4,0,2,"h",false],[5,3,2,"h",false],[0,0,3,"h",false],[2,0,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[5,1,3,"h",false],[0,0,2,"v",false],[1,4,3,"v",false],[4,2,2,"h",false],[3,5,2,"v",false],[0,2,3,"h",false],[3,0,3,"v",false],[1,1,3,"h",false],[0,5,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,3,"v",false],[0,5,3,"v",false],[3,0,3,"v",false],[4,4,2,"v",false],[4,2,2,"h",false],[3,1,2,"v",false],[1,2,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[4,0,2,"v",false],[5,2,3,"h",false],[4,2,2,"h",false],[0,3,2,"h",false],[3,3,3,"h",false],[3,1,2,"h",false],[0,5,3,"v",false],[4,1,2,"v",false],[1,4,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[3,4,2,"h",false],[0,1,2,"v",false],[0,5,3,"v",false],[4,0,2,"v",false],[5,2,3,"h",false],[1,4,2,"v",false],[2,2,3,"v",false],[1,2,2,"h",false]],par:12,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[2,5,2,"v",false],[1,0,2,"v",false],[1,4,2,"v",false],[4,0,3,"h",false],[0,4,2,"h",false],[4,4,2,"v",false],[5,1,2,"h",false],[0,2,2,"v",false],[4,3,2,"v",false],[4,5,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[3,3,2,"v",false],[5,4,2,"h",false],[3,5,2,"v",false],[5,0,2,"h",false],[0,1,3,"h",false],[0,5,2,"v",false],[1,2,2,"h",false],[1,4,3,"v",false],[4,2,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,4,2,"v",false],[3,1,2,"v",false],[1,5,3,"v",false],[4,2,2,"v",false],[4,3,2,"h",false],[0,3,3,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,4,3,"v",false],[4,3,2,"h",false],[3,1,2,"v",false],[3,5,2,"v",false],[1,3,3,"v",false],[5,4,2,"h",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[0,3,3,"v",false],[4,4,2,"h",false],[1,4,3,"v",false],[5,0,2,"h",false],[0,2,2,"v",false],[3,1,3,"h",false],[4,2,2,"v",false],[3,0,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[0,1,2,"h",false],[3,0,2,"h",false],[3,4,2,"h",false],[3,2,2,"v",false],[0,3,3,"v",false],[4,0,2,"v",false],[5,2,3,"h",false],[0,5,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[3,0,2,"v",false],[5,2,3,"h",false],[4,4,2,"h",false],[0,2,3,"h",false],[1,4,2,"v",false],[3,2,2,"v",false],[3,3,2,"h",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[4,1,2,"v",false],[1,2,2,"v",false],[3,2,3,"h",false],[0,3,2,"h",false],[0,5,2,"v",false],[4,2,3,"h",false],[0,1,2,"h",false],[0,0,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[3,3,3,"h",false],[5,1,3,"h",false],[4,1,2,"h",false],[4,3,2,"h",false],[0,4,2,"v",false],[3,0,2,"v",false],[0,3,2,"v",false],[0,1,2,"h",false],[0,0,2,"v",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[0,4,2,"v",false],[2,4,3,"v",false],[4,2,2,"v",false],[0,0,2,"v",false],[0,1,2,"h",false]],par:12,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,3,"v",false],[4,2,2,"h",false],[5,3,3,"h",false],[3,0,2,"v",false],[0,3,2,"h",false],[0,5,2,"v",false],[2,4,3,"v",false],[4,1,2,"v",false]],par:13,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,4,2,"v",false],[0,2,3,"v",false],[2,3,2,"v",false],[4,2,2,"h",false],[5,1,2,"h",false],[3,0,3,"h",false],[2,5,3,"v",false],[5,4,2,"h",false],[0,0,2,"h",false]],par:13,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,5,3,"v",false],[1,4,3,"v",false],[3,2,2,"h",false],[4,1,2,"v",false],[0,2,2,"h",false],[3,0,3,"v",false],[5,3,3,"h",false],[4,2,2,"v",false],[4,3,3,"h",false]],par:13,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[3,0,3,"v",false],[3,2,2,"h",false],[5,3,2,"h",false],[0,3,3,"h",false],[2,5,3,"v",false],[3,1,2,"v",false],[2,4,2,"v",false],[4,2,3,"h",false],[1,3,2,"v",false]],par:13,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[4,0,3,"h",false],[0,2,2,"h",false],[0,4,3,"v",false],[2,2,2,"v",false],[5,3,2,"h",false],[3,5,2,"v",false],[1,1,3,"h",false],[0,0,2,"h",false],[1,5,2,"v",false]],par:13,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,4,2,"v",false],[3,0,3,"h",false],[1,2,2,"v",false],[0,1,2,"v",false],[4,3,2,"v",false],[0,3,2,"h",false],[1,5,2,"v",false],[2,3,2,"v",false],[4,5,2,"v",false]],par:13,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,5,3,"v",false],[3,1,3,"v",false],[4,2,3,"h",false],[5,4,2,"h",false],[1,3,2,"h",false],[0,2,2,"v",false],[0,1,2,"v",false],[2,4,2,"v",false],[1,0,3,"v",false],[0,4,2,"h",false]],par:13,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,4,3,"v",false],[4,1,2,"h",false],[0,3,2,"v",false],[5,0,2,"h",false],[1,5,3,"v",false],[3,0,2,"v",false],[5,4,2,"h",false],[0,2,2,"v",false],[0,4,2,"h",false]],par:13,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,5,3,"v",false],[5,2,3,"h",false],[4,1,2,"v",false],[3,4,2,"v",false],[0,2,2,"v",false],[0,0,2,"v",false],[1,3,3,"v",false],[2,2,2,"v",false],[0,3,2,"h",false],[1,4,2,"v",false]],par:13,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,5,2,"v",false],[4,2,2,"h",false],[5,2,2,"h",false],[1,3,3,"v",false],[3,1,2,"v",false],[3,0,2,"v",false],[2,4,2,"v",false],[4,4,2,"v",false]],par:14,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,5,2,"v",false],[0,0,3,"v",false],[5,2,2,"h",false],[1,4,3,"v",false],[5,4,2,"h",false],[3,2,2,"v",false],[1,1,3,"h",false],[4,3,3,"h",false]],par:14,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,4,3,"v",false],[3,3,2,"v",false],[0,4,2,"h",false],[4,1,2,"v",false],[2,2,2,"v",false],[4,2,2,"v",false],[5,4,2,"h",false],[4,4,2,"h",false],[4,0,2,"v",false],[3,0,2,"h",false]],par:14,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[3,0,2,"v",false],[0,3,2,"h",false],[1,4,2,"v",false],[2,3,2,"v",false],[4,3,2,"v",false],[3,4,3,"v",false],[5,0,3,"h",false],[3,1,2,"h",false],[0,1,2,"v",false]],par:14,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,5,3,"v",false],[1,3,3,"v",false],[5,3,2,"h",false],[0,2,2,"v",false],[2,4,2,"v",false],[4,3,2,"h",false],[4,1,2,"v",false],[0,4,2,"v",false]],par:14,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,4,2,"v",false],[5,2,3,"h",false],[4,2,2,"h",false],[0,3,3,"v",false],[3,5,3,"v",false],[0,0,2,"v",false],[4,1,2,"v",false],[2,0,3,"v",false]],par:14,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,5,3,"v",false],[4,1,2,"v",false],[4,3,2,"h",false],[0,3,3,"v",false],[3,2,3,"v",false],[1,4,3,"v",false],[0,0,2,"h",false]],par:15,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[0,4,3,"v",false],[4,3,2,"h",false],[5,1,3,"h",false],[0,0,2,"h",false],[3,4,2,"h",false],[3,2,2,"v",false],[4,5,2,"v",false],[3,0,2,"v",false],[1,0,3,"h",false],[0,2,2,"h",false]],par:15,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[2,5,2,"v",false],[2,3,3,"v",false],[0,3,2,"h",false],[5,2,2,"h",false],[3,0,2,"v",false],[3,4,3,"v",false],[4,1,2,"h",false],[4,5,2,"v",false]],par:15,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[2,5,2,"v",false],[4,4,2,"h",false],[0,2,2,"v",false],[1,4,3,"v",false],[0,5,2,"v",false],[3,2,2,"v",false],[5,4,2,"h",false],[0,0,2,"h",false],[2,1,2,"v",false]],par:15,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[1,3,3,"v",false],[4,5,2,"v",false],[1,5,2,"v",false],[3,4,3,"v",false],[0,0,2,"h",false],[4,2,2,"h",false],[3,1,2,"v",false]],par:15,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,4,3,"v",false],[3,0,2,"h",false],[2,5,3,"v",false],[5,2,2,"h",false],[4,0,2,"v",false],[1,2,3,"v",false]],par:15,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,3,3,"v",false],[4,5,2,"v",false],[1,4,3,"v",false],[3,0,3,"h",false],[4,2,2,"v",false],[0,2,3,"h",false],[4,3,2,"h",false],[0,0,2,"v",false]],par:16,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[0,3,3,"v",false],[3,2,2,"h",false],[1,0,2,"v",false],[4,5,2,"v",false],[0,2,2,"v",false],[4,2,2,"v",false],[0,0,2,"h",false],[1,5,2,"v",false],[4,3,2,"h",false],[5,0,2,"h",false]],par:16,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,4,2,"v",false],[3,1,2,"v",false],[0,3,3,"v",false],[4,3,2,"h",false],[3,5,2,"v",false],[2,2,2,"v",false],[0,4,2,"h",false],[1,5,2,"v",false]],par:16,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,5,2,"v",false],[2,4,2,"v",false],[3,0,3,"v",false],[0,2,3,"v",false],[3,3,2,"v",false],[0,1,2,"v",false],[0,5,2,"v",false],[0,3,2,"h",false],[5,3,3,"h",false],[3,1,2,"h",false]],par:16,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[2,4,3,"v",false],[4,2,2,"h",false],[0,0,3,"h",false],[4,1,2,"v",false],[0,3,3,"v",false],[3,0,3,"v",false],[3,5,3,"v",false],[5,2,2,"h",false]],par:16,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[2,4,3,"v",false],[0,3,3,"h",false],[1,3,2,"v",false],[4,5,2,"v",false],[3,1,2,"v",false],[5,1,2,"h",false],[4,2,2,"h",false],[2,2,2,"v",false],[0,2,2,"v",false]],par:16,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[0,4,3,"v",false],[2,0,3,"v",false],[3,2,2,"v",false],[0,2,2,"h",false],[1,1,2,"v",false],[3,3,3,"h",false],[5,0,2,"h",false],[0,5,2,"v",false],[4,4,2,"h",false],[4,3,2,"v",false]],par:17,d:"Intermediate"},
+{v:[[2,0,2,"h",true],[1,4,3,"v",false],[3,2,2,"h",false],[0,1,2,"h",false],[5,3,2,"h",false],[1,0,3,"h",false],[3,0,2,"h",false],[1,3,2,"v",false],[4,0,2,"v",false],[4,2,2,"v",false],[3,5,3,"v",false]],par:17,d:"Intermediate"},
+{v:[[2,1,2,"h",true],[0,3,3,"v",false],[4,3,2,"h",false],[3,1,2,"v",false],[3,5,2,"v",false],[0,0,2,"h",false],[1,5,2,"v",false],[4,0,2,"v",false],[0,2,2,"v",false],[4,2,2,"v",false]],par:18,d:"Intermediate"},
+{v:[[2,2,2,"h",true],[1,4,3,"v",false],[5,3,2,"h",false],[4,3,2,"h",false],[3,1,2,"v",false],[1,0,3,"v",false],[0,0,3,"h",false],[1,1,2,"h",false],[0,3,2,"v",false],[1,5,3,"v",false],[3,2,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,4,2,"v",false],[3,1,2,"h",false],[0,3,3,"h",false],[3,5,3,"v",false],[1,2,2,"v",false],[5,1,3,"h",false],[1,0,2,"h",false],[4,2,2,"h",false],[1,5,2,"v",false],[3,0,2,"v",false],[3,4,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,3,3,"v",false],[0,4,2,"v",false],[4,0,2,"v",false],[4,2,2,"v",false],[5,3,3,"h",false],[0,2,2,"v",false],[3,5,2,"v",false],[0,5,2,"v",false],[4,1,2,"v",false],[2,4,2,"v",false],[4,3,2,"h",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,4,3,"v",false],[0,3,2,"v",false],[1,2,3,"v",false],[4,2,2,"h",false],[4,1,2,"v",false],[5,2,2,"h",false],[3,5,2,"v",false],[4,0,2,"v",false],[0,4,2,"h",false],[2,3,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,5,3,"v",false],[3,2,3,"h",false],[4,0,3,"h",false],[1,0,3,"v",false],[5,2,3,"h",false],[4,3,2,"h",false],[1,4,2,"v",false],[0,3,2,"h",false],[5,0,2,"h",false],[0,2,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,5,2,"v",false],[2,3,2,"v",false],[4,5,2,"v",false],[4,1,2,"v",false],[0,4,2,"h",false],[4,2,2,"h",false],[0,0,2,"v",false],[3,1,2,"h",false],[1,3,3,"h",false],[2,0,3,"v",false],[3,4,2,"v",false],[5,3,2,"h",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[3,3,2,"h",false],[0,1,3,"h",false],[2,5,2,"v",false],[0,4,3,"v",false],[3,0,2,"v",false],[1,3,2,"v",false],[3,1,2,"h",false],[4,2,3,"h",false]],par:19,d:"Advanced"},
+{v:[[2,2,2,"h",true],[2,4,3,"v",false],[2,1,2,"v",false],[5,4,2,"h",false],[0,2,2,"h",false],[3,2,3,"v",false],[1,2,2,"h",false],[4,0,2,"h",false],[1,0,2,"v",false],[0,5,2,"v",false],[0,0,2,"h",false],[4,3,2,"v",false],[2,5,3,"v",false]],par:19,d:"Advanced"},
+{v:[[2,1,2,"h",true],[1,3,2,"v",false],[3,2,2,"v",false],[5,1,3,"h",false],[1,4,3,"v",false],[1,0,2,"v",false],[4,4,2,"h",false],[0,2,3,"h",false],[0,5,2,"v",false],[4,0,2,"v",false],[3,1,2,"v",false],[2,5,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,5,2,"v",false],[0,0,2,"h",false],[3,0,2,"v",false],[2,4,3,"v",false],[5,1,2,"h",false],[2,2,2,"v",false],[3,1,2,"v",false],[0,2,2,"v",false],[4,5,2,"v",false],[2,3,2,"v",false],[4,2,2,"h",false]],par:19,d:"Advanced"},
+{v:[[2,2,2,"h",true],[1,5,3,"v",false],[2,1,3,"v",false],[5,0,2,"h",false],[0,2,2,"v",false],[4,2,2,"h",false],[1,4,2,"v",false],[5,3,2,"h",false],[2,0,3,"v",false],[4,4,2,"h",false],[0,3,2,"h",false],[0,0,2,"h",false],[1,0,2,"h",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,4,3,"v",false],[0,0,2,"h",false],[0,3,2,"v",false],[4,2,2,"h",false],[4,1,2,"v",false],[3,5,3,"v",false],[1,2,3,"v",false],[5,3,2,"h",false],[0,5,2,"v",false],[3,0,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[0,4,3,"v",false],[1,0,3,"h",false],[3,2,2,"v",false],[2,3,2,"v",false],[3,0,2,"h",false],[4,0,2,"v",false],[4,3,3,"h",false],[0,5,2,"v",false],[5,4,2,"h",false],[2,5,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,3,"v",false],[4,2,2,"h",false],[4,5,2,"v",false],[5,2,2,"h",false],[4,4,2,"v",false],[1,4,2,"v",false],[0,1,2,"h",false],[4,1,2,"v",false],[2,3,2,"v",false],[0,5,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,5,2,"v",false],[3,0,3,"v",false],[5,3,3,"h",false],[4,2,2,"v",false],[0,1,2,"h",false],[0,4,3,"v",false],[0,5,2,"v",false],[1,1,3,"h",false],[3,1,3,"v",false],[4,4,2,"h",false],[0,0,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,5,2,"v",false],[0,4,2,"h",false],[1,2,3,"v",false],[3,1,2,"v",false],[0,3,3,"v",false],[4,5,2,"v",false],[4,3,2,"h",false],[5,1,2,"h",false],[2,4,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[0,0,3,"h",false],[1,3,2,"h",false],[4,1,2,"h",false],[4,5,2,"v",false],[0,4,2,"h",false],[5,2,2,"h",false],[2,5,2,"v",false],[2,4,3,"v",false],[4,0,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[0,0,3,"h",false],[2,5,2,"v",false],[0,3,2,"v",false],[3,0,2,"v",false],[4,4,2,"h",false],[1,0,2,"h",false],[4,1,2,"h",false],[5,4,2,"h",false],[5,1,2,"h",false],[3,3,2,"v",false],[0,4,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[3,0,2,"v",false],[1,0,2,"h",false],[4,2,2,"v",false],[3,1,2,"h",false],[4,3,3,"h",false],[0,0,3,"h",false],[2,3,2,"v",false],[5,0,2,"h",false],[0,5,2,"v",false],[2,5,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[0,2,3,"h",false],[0,5,3,"v",false],[4,2,2,"h",false],[2,3,2,"v",false],[2,4,2,"v",false],[3,0,2,"v",false],[4,4,2,"h",false],[1,0,2,"h",false]],par:19,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,4,2,"v",false],[1,5,2,"v",false],[4,3,2,"v",false],[3,0,2,"v",false],[0,2,2,"v",false],[4,5,2,"v",false],[1,0,2,"h",false],[3,1,2,"h",false],[4,1,2,"h",false],[1,3,2,"v",false],[0,3,3,"h",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,4,2,"v",false],[4,3,2,"h",false],[1,4,2,"h",false],[3,2,2,"h",false],[0,4,2,"h",false],[4,0,2,"v",false],[5,1,2,"h",false],[0,0,3,"h",false],[5,3,3,"h",false],[3,5,2,"v",false],[1,2,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,5,2,"v",false],[5,0,3,"h",false],[1,2,2,"h",false],[4,4,2,"v",false],[3,0,2,"h",false],[2,2,2,"v",false],[0,1,2,"v",false],[1,4,2,"v",false],[4,0,3,"h",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,4,2,"v",false],[1,2,2,"v",false],[4,1,3,"h",false],[3,2,2,"h",false],[1,5,3,"v",false],[5,3,3,"h",false],[0,0,2,"v",false],[0,2,2,"h",false],[3,0,2,"h",false],[5,0,2,"h",false],[4,4,2,"h",false]],par:19,d:"Advanced"},
+{v:[[2,1,2,"h",true],[1,3,2,"v",false],[1,4,2,"v",false],[1,0,3,"v",false],[4,3,2,"v",false],[0,2,2,"h",false],[0,5,3,"v",false],[4,4,2,"h",false],[5,0,2,"h",false],[3,1,3,"h",false],[4,2,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,3,3,"v",false],[1,4,3,"v",false],[2,5,2,"v",false],[4,0,2,"v",false],[0,0,3,"h",false],[0,5,2,"v",false],[1,0,3,"h",false],[5,4,2,"h",false],[3,2,3,"v",false],[0,3,2,"h",false],[3,1,2,"v",false],[2,0,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[4,2,2,"v",false],[5,3,3,"h",false],[4,3,2,"h",false],[1,5,2,"v",false],[4,1,2,"v",false],[2,4,2,"v",false],[0,2,3,"h",false],[3,1,2,"h",false],[1,2,2,"v",false],[4,0,2,"v",false]],par:19,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[0,1,2,"h",false],[5,0,2,"h",false],[4,3,2,"v",false],[3,2,2,"h",false],[4,0,3,"h",false],[5,4,2,"h",false],[0,0,2,"v",false],[0,4,2,"h",false],[1,3,2,"h",false]],par:19,d:"Advanced"},
+{v:[[2,2,2,"h",true],[2,4,3,"v",false],[5,3,2,"h",false],[0,2,3,"h",false],[4,2,2,"v",false],[1,2,2,"h",false],[1,5,2,"v",false],[5,0,2,"h",false],[0,0,3,"v",false],[3,0,3,"h",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,5,2,"v",false],[0,0,2,"h",false],[0,4,2,"h",false],[3,4,2,"h",false],[5,2,3,"h",false],[2,2,3,"v",false],[3,3,2,"v",false],[4,5,2,"v",false],[1,2,3,"h",false],[4,0,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,5,2,"v",false],[4,3,2,"v",false],[1,3,2,"v",false],[2,4,2,"v",false],[4,0,3,"h",false],[3,5,2,"v",false],[1,1,2,"h",false],[2,2,2,"v",false],[0,4,2,"h",false],[0,0,2,"v",false],[5,0,3,"h",false]],par:20,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,5,3,"v",false],[5,4,2,"h",false],[3,3,2,"h",false],[0,2,2,"v",false],[4,0,2,"h",false],[0,3,3,"h",false],[5,2,2,"h",false],[1,3,2,"v",false],[2,0,2,"v",false],[1,0,2,"h",false],[1,4,2,"h",false],[4,2,2,"h",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,5,2,"v",false],[4,2,3,"h",false],[5,2,2,"h",false],[1,1,3,"h",false],[3,3,2,"h",false],[0,0,2,"h",false],[0,4,3,"v",false],[3,5,2,"v",false],[2,2,2,"v",false],[3,0,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,4,2,"v",false],[0,4,2,"v",false],[5,1,2,"h",false],[1,3,3,"v",false],[0,1,2,"h",false],[4,2,3,"h",false],[0,0,2,"v",false],[1,5,2,"v",false],[5,3,2,"h",false],[4,5,2,"v",false],[3,1,2,"h",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,4,3,"v",false],[0,5,2,"v",false],[3,2,2,"h",false],[1,2,2,"h",false],[3,1,3,"v",false],[0,2,2,"h",false],[0,0,2,"h",false],[5,4,2,"h",false],[4,2,2,"v",false],[4,3,2,"v",false],[4,0,2,"v",false],[2,5,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,1,2,"h",true],[1,4,3,"v",false],[5,1,3,"h",false],[3,0,3,"v",false],[3,3,2,"v",false],[0,1,3,"h",false],[3,1,2,"v",false],[0,5,2,"v",false],[2,5,2,"v",false],[1,0,2,"v",false],[1,2,2,"h",false],[4,4,2,"h",false],[3,2,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,2,2,"h",true],[0,4,3,"v",false],[4,4,2,"h",false],[2,5,2,"v",false],[0,0,3,"h",false],[4,2,2,"v",false],[5,3,2,"h",false],[5,0,2,"h",false],[3,1,2,"h",false],[1,0,3,"h",false],[4,0,2,"h",false],[0,5,2,"v",false],[2,0,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,1,2,"h",true],[1,4,3,"v",false],[1,5,2,"v",false],[4,0,2,"h",false],[4,3,2,"h",false],[4,2,2,"v",false],[2,3,2,"v",false],[0,4,2,"h",false],[3,1,2,"h",false],[0,0,2,"v",false],[5,3,2,"h",false],[3,5,3,"v",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,5,3,"v",false],[4,2,2,"h",false],[2,3,2,"v",false],[1,2,2,"v",false],[1,0,2,"h",false],[2,4,2,"v",false],[4,4,2,"v",false],[5,0,3,"h",false],[3,1,2,"h",false],[0,2,3,"h",false],[3,0,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[3,4,2,"v",false],[0,3,2,"v",false],[3,1,3,"h",false],[0,4,2,"v",false],[4,3,2,"v",false],[2,5,2,"v",false],[4,1,2,"h",false],[0,0,3,"h",false],[5,0,3,"h",false],[3,0,2,"v",false],[0,5,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,2,2,"h",true],[2,4,2,"v",false],[5,2,3,"h",false],[4,0,3,"h",false],[4,3,2,"h",false],[5,0,2,"h",false],[0,3,2,"h",false],[2,5,3,"v",false],[0,0,3,"v",false],[3,0,2,"h",false],[0,2,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,3,3,"v",false],[2,4,2,"v",false],[5,3,3,"h",false],[1,0,2,"v",false],[3,0,2,"h",false],[0,1,2,"h",false],[4,4,2,"h",false],[1,5,3,"v",false],[1,1,3,"h",false],[4,2,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,3,2,"v",false],[2,5,2,"v",false],[0,2,3,"h",false],[1,4,3,"v",false],[3,1,2,"v",false],[4,3,2,"h",false],[0,5,2,"v",false],[1,0,3,"v",false],[4,2,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,3,3,"v",false],[1,5,2,"v",false],[3,0,2,"h",false],[5,2,2,"h",false],[3,4,3,"v",false],[4,1,2,"h",false],[4,0,2,"v",false],[0,1,2,"v",false],[0,2,2,"v",false],[0,3,3,"h",false],[2,2,2,"v",false],[4,5,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[0,5,3,"v",false],[4,2,2,"v",false],[4,3,2,"h",false],[1,1,3,"h",false],[0,4,2,"v",false],[5,3,3,"h",false],[0,2,2,"h",false],[3,4,2,"h",false],[3,1,2,"h",false],[4,0,2,"v",false],[0,0,2,"h",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,3,"v",false],[2,5,3,"v",false],[3,0,2,"h",false],[2,3,2,"v",false],[5,3,3,"h",false],[4,2,2,"h",false],[5,1,2,"h",false],[0,1,2,"v",false],[0,2,2,"h",false],[1,4,2,"v",false],[4,0,2,"v",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,2,"v",false],[1,5,3,"v",false],[3,1,2,"v",false],[0,0,2,"h",false],[3,4,2,"v",false],[1,0,3,"h",false],[5,4,2,"h",false],[0,2,2,"h",false],[3,0,2,"v",false],[4,2,2,"h",false],[5,0,3,"h",false]],par:20,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,3,3,"v",false],[1,4,3,"v",false],[4,3,2,"h",false],[3,0,3,"v",false],[2,5,2,"v",false],[0,5,2,"v",false],[3,1,2,"v",false],[0,1,3,"h",false],[1,2,2,"v",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[0,2,3,"h",false],[2,5,3,"v",false],[1,4,2,"v",false],[1,2,2,"h",false],[3,3,2,"h",false],[3,0,2,"v",false],[4,4,2,"v",false],[4,1,2,"h",false]],par:21,d:"Advanced"},
+{v:[[2,1,2,"h",true],[0,4,3,"v",false],[3,0,2,"v",false],[4,4,2,"h",false],[1,3,2,"v",false],[3,4,2,"h",false],[0,2,2,"h",false],[5,3,3,"h",false],[0,0,2,"v",false],[4,1,2,"v",false],[3,3,2,"v",false],[4,2,2,"v",false],[0,5,3,"v",false]],par:21,d:"Advanced"},
+{v:[[2,1,2,"h",true],[1,4,2,"v",false],[0,3,3,"h",false],[3,1,2,"h",false],[4,2,3,"h",false],[2,5,3,"v",false],[0,0,3,"v",false],[5,2,2,"h",false],[5,4,2,"h",false],[1,2,2,"h",false],[3,3,2,"h",false],[4,1,2,"v",false],[0,1,2,"h",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,5,3,"v",false],[5,1,3,"h",false],[3,1,3,"h",false],[4,0,3,"h",false],[0,3,3,"v",false],[1,4,2,"v",false],[3,4,3,"v",false],[1,2,2,"v",false],[0,0,2,"v",false],[0,4,2,"h",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[0,5,3,"v",false],[1,0,2,"h",false],[5,2,2,"h",false],[3,0,2,"v",false],[1,3,3,"v",false],[0,4,2,"v",false],[3,1,2,"h",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[5,1,2,"h",false],[3,2,3,"h",false],[4,1,2,"h",false],[3,5,3,"v",false],[4,0,2,"v",false],[0,4,2,"h",false],[1,3,2,"v",false],[0,1,2,"v",false]],par:21,d:"Advanced"},
+{v:[[2,1,2,"h",true],[1,4,3,"v",false],[5,2,2,"h",false],[0,2,3,"h",false],[3,0,2,"h",false],[2,5,2,"v",false],[4,3,3,"h",false],[3,2,2,"v",false],[0,5,2,"v",false],[0,0,3,"v",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,4,2,"v",false],[3,0,2,"v",false],[0,0,2,"h",false],[3,2,2,"v",false],[4,3,2,"v",false],[4,1,2,"v",false],[0,5,3,"v",false],[3,3,2,"h",false],[5,4,2,"h",false],[4,4,2,"h",false],[1,1,3,"h",false],[0,2,2,"h",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[1,2,2,"v",false],[3,0,3,"v",false],[0,5,2,"v",false],[4,5,2,"v",false],[0,0,2,"v",false],[3,4,2,"h",false],[4,1,2,"h",false],[0,4,2,"v",false],[5,3,2,"h",false],[0,1,2,"h",false],[3,3,2,"v",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,4,3,"v",false],[3,5,2,"v",false],[4,1,3,"h",false],[3,0,2,"h",false],[0,1,2,"h",false],[5,0,3,"h",false],[0,3,3,"h",false],[2,3,2,"v",false],[0,0,2,"v",false],[2,2,2,"v",false],[1,1,2,"h",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,4,3,"v",false],[5,2,3,"h",false],[0,0,2,"v",false],[1,3,3,"v",false],[4,1,2,"v",false],[0,2,2,"v",false],[3,0,2,"h",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[2,4,2,"v",false],[1,5,3,"v",false],[0,3,2,"h",false],[1,0,2,"h",false],[3,1,2,"v",false],[1,2,3,"v",false],[4,4,2,"h",false],[5,3,3,"h",false],[5,1,2,"h",false],[3,0,2,"v",false],[0,0,2,"h",false]],par:21,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,4,3,"v",false],[2,5,3,"v",false],[1,0,2,"v",false],[1,3,2,"v",false],[0,1,2,"v",false],[4,2,2,"v",false],[3,1,3,"h",false],[5,3,2,"h",false],[0,3,3,"h",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,3,2,"v",false],[1,4,2,"v",false],[1,5,2,"v",false],[4,3,2,"h",false],[1,0,2,"h",false],[3,0,2,"v",false],[4,1,2,"h",false],[0,1,3,"h",false],[5,4,2,"h",false],[3,1,2,"h",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,3,2,"v",false],[2,5,2,"v",false],[4,0,2,"v",false],[0,0,3,"h",false],[3,0,2,"h",false],[4,4,2,"h",false],[4,2,2,"v",false],[0,5,2,"v",false],[0,4,3,"v",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,3,2,"v",false],[2,4,2,"v",false],[1,5,3,"v",false],[1,2,2,"h",false],[3,0,2,"h",false],[4,0,2,"v",false],[4,1,2,"h",false],[5,3,2,"h",false],[4,3,3,"h",false],[0,1,3,"h",false]],par:21,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,5,3,"v",false],[4,3,2,"v",false],[0,2,3,"h",false],[4,4,2,"h",false],[1,2,2,"h",false],[2,3,2,"v",false],[2,2,2,"v",false],[4,0,2,"v",false],[5,4,2,"h",false]],par:22,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,4,3,"v",false],[3,3,2,"v",false],[1,4,2,"h",false],[0,1,2,"h",false],[5,0,2,"h",false],[4,5,2,"v",false],[5,3,2,"h",false],[0,3,2,"v",false],[3,0,3,"h",false],[0,4,2,"h",false],[4,2,2,"v",false],[4,0,2,"h",false]],par:22,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,5,2,"v",false],[0,2,2,"v",false],[3,0,2,"h",false],[2,4,3,"v",false],[4,0,2,"v",false],[5,4,2,"h",false],[1,0,2,"h",false],[5,2,2,"h",false],[2,3,2,"v",false],[4,1,2,"v",false],[0,3,3,"h",false]],par:22,d:"Advanced"},
+{v:[[2,2,2,"h",true],[2,5,2,"v",false],[4,2,2,"v",false],[1,0,3,"v",false],[0,1,3,"v",false],[0,4,2,"h",false],[1,4,3,"v",false],[5,3,2,"h",false],[4,5,2,"v",false],[3,1,2,"h",false],[5,0,2,"h",false],[4,3,2,"h",false]],par:22,d:"Advanced"},
+{v:[[2,0,2,"h",true],[0,3,3,"v",false],[1,4,2,"v",false],[1,5,2,"v",false],[1,2,2,"v",false],[3,3,2,"h",false],[5,4,2,"h",false],[4,0,3,"h",false],[0,0,2,"v",false],[3,0,3,"h",false],[4,4,2,"h",false],[0,4,2,"h",false]],par:22,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,2,3,"v",false],[1,4,2,"v",false],[1,0,3,"h",false],[2,3,2,"v",false],[5,1,3,"h",false],[4,4,2,"h",false],[0,2,2,"h",false],[1,5,3,"v",false],[3,1,2,"v",false],[0,4,2,"h",false]],par:22,d:"Advanced"},
+{v:[[2,1,2,"h",true],[1,5,2,"v",false],[0,4,3,"v",false],[0,2,2,"v",false],[0,0,2,"h",false],[3,3,2,"h",false],[5,4,2,"h",false],[5,2,2,"h",false],[3,1,2,"v",false],[1,0,2,"v",false],[0,3,2,"v",false],[3,2,2,"v",false],[4,4,2,"h",false]],par:23,d:"Advanced"},
+{v:[[2,1,2,"h",true],[1,3,2,"v",false],[5,2,2,"h",false],[3,0,2,"h",false],[3,2,2,"v",false],[0,1,2,"h",false],[1,5,2,"v",false],[4,3,3,"h",false],[0,3,3,"h",false],[1,4,2,"v",false],[0,0,3,"v",false],[1,1,2,"h",false]],par:23,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,3,"v",false],[3,3,2,"h",false],[0,0,2,"h",false],[0,4,2,"h",false],[4,1,2,"h",false],[3,0,2,"v",false],[3,5,3,"v",false],[0,3,3,"v",false]],par:23,d:"Advanced"},
+{v:[[2,1,2,"h",true],[1,4,3,"v",false],[0,3,2,"v",false],[4,0,3,"h",false],[4,3,2,"v",false],[3,5,2,"v",false],[0,2,2,"v",false],[1,5,2,"v",false],[0,4,2,"h",false],[5,0,3,"h",false],[1,0,2,"v",false]],par:23,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[3,1,2,"h",false],[4,2,2,"h",false],[0,1,2,"v",false],[2,4,3,"v",false],[3,5,3,"v",false],[1,3,2,"v",false],[3,0,2,"v",false],[5,1,3,"h",false],[1,4,2,"h",false],[0,4,2,"h",false],[0,2,2,"h",false]],par:23,d:"Advanced"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[1,4,2,"v",false],[4,1,2,"h",false],[5,3,2,"h",false],[3,3,2,"h",false],[1,0,2,"h",false],[0,1,3,"h",false],[3,0,2,"v",false],[2,5,2,"v",false],[4,3,2,"h",false],[2,2,2,"v",false],[5,0,2,"h",false]],par:23,d:"Advanced"},
+{v:[[2,1,2,"h",true],[2,3,2,"v",false],[1,4,2,"v",false],[0,3,3,"h",false],[5,0,2,"h",false],[1,0,2,"h",false],[4,2,2,"v",false],[3,4,2,"h",false],[0,2,2,"v",false],[3,0,2,"v",false],[4,4,2,"h",false]],par:23,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[3,3,2,"v",false],[4,1,2,"h",false],[4,4,2,"v",false],[3,0,2,"v",false],[0,0,3,"h",false],[2,5,2,"v",false],[0,3,2,"h",false],[1,0,3,"h",false],[1,3,2,"h",false],[5,1,3,"h",false],[4,5,2,"v",false]],par:24,d:"Advanced"},
+{v:[[2,0,2,"h",true],[0,4,3,"v",false],[5,1,2,"h",false],[2,5,2,"v",false],[4,0,2,"v",false],[4,5,2,"v",false],[0,1,3,"h",false],[3,1,2,"v",false],[0,0,2,"v",false],[4,2,2,"h",false],[1,2,2,"v",false],[1,3,3,"v",false]],par:24,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[5,2,2,"h",false],[3,4,2,"v",false],[4,5,2,"v",false],[0,3,3,"h",false],[1,0,3,"h",false],[2,5,2,"v",false],[4,0,2,"v",false],[4,1,2,"h",false],[0,0,2,"h",false],[3,0,2,"h",false],[1,4,2,"h",false]],par:24,d:"Advanced"},
+{v:[[2,0,2,"h",true],[2,3,3,"v",false],[2,4,2,"v",false],[1,5,2,"v",false],[4,5,2,"v",false],[1,1,2,"h",false],[4,0,3,"h",false],[0,4,2,"v",false],[0,0,2,"v",false],[5,2,3,"h",false],[3,0,2,"h",false],[2,2,2,"v",false],[0,2,2,"h",false]],par:23,d:"Expert"},
+{v:[[2,2,2,"h",true],[1,5,2,"v",false],[4,3,2,"v",false],[1,2,2,"h",false],[2,0,3,"v",false],[5,0,2,"h",false],[0,4,3,"v",false],[3,1,3,"h",false],[5,4,2,"h",false],[0,0,2,"h",false],[4,2,2,"v",false],[4,4,2,"h",false]],par:23,d:"Expert"},
+{v:[[2,2,2,"h",true],[2,4,2,"v",false],[3,2,2,"h",false],[1,1,2,"h",false],[5,3,3,"h",false],[0,0,3,"v",false],[0,3,3,"h",false],[2,5,3,"v",false],[3,0,2,"h",false],[0,1,2,"h",false],[4,2,3,"h",false],[4,1,2,"v",false]],par:23,d:"Expert"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[2,3,2,"v",false],[2,4,2,"v",false],[1,5,2,"v",false],[5,2,3,"h",false],[3,0,2,"v",false],[0,1,2,"v",false],[0,3,2,"v",false],[4,1,2,"h",false],[4,5,2,"v",false],[3,1,2,"h",false]],par:23,d:"Expert"},
+{v:[[2,1,2,"h",true],[1,5,2,"v",false],[3,5,2,"v",false],[1,4,3,"v",false],[5,3,3,"h",false],[4,2,2,"v",false],[3,2,2,"h",false],[4,3,2,"h",false],[4,1,2,"v",false],[3,0,2,"v",false],[1,1,3,"h",false],[0,4,2,"h",false],[0,0,2,"v",false]],par:23,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,2,"v",false],[2,4,2,"v",false],[4,3,3,"h",false],[1,0,2,"h",false],[3,0,2,"v",false],[4,1,2,"h",false],[0,2,3,"h",false],[5,1,3,"h",false],[0,5,3,"v",false],[5,4,2,"h",false]],par:23,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,3,2,"v",false],[2,4,2,"v",false],[4,3,2,"h",false],[1,4,2,"h",false],[5,3,3,"h",false],[4,0,2,"v",false],[0,3,2,"h",false],[3,0,2,"h",false],[2,5,3,"v",false],[5,1,2,"h",false],[0,0,3,"h",false]],par:24,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[0,3,3,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[5,3,2,"h",false],[0,0,3,"h",false],[4,3,2,"h",false],[4,5,2,"v",false],[3,1,2,"v",false],[3,0,3,"v",false]],par:24,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[2,5,2,"v",false],[3,0,2,"h",false],[4,0,3,"h",false],[1,2,3,"h",false],[0,3,2,"h",false],[5,0,2,"h",false],[3,4,3,"v",false],[2,2,2,"v",false],[0,1,2,"h",false],[0,0,2,"v",false]],par:24,d:"Expert"},
+{v:[[2,2,2,"h",true],[1,4,2,"v",false],[2,5,2,"v",false],[4,4,2,"v",false],[0,3,2,"h",false],[4,0,3,"h",false],[1,0,2,"v",false],[3,3,3,"v",false],[3,0,3,"h",false],[0,5,2,"v",false],[0,2,2,"v",false]],par:24,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,2,"v",false],[1,4,2,"v",false],[1,5,2,"v",false],[4,1,2,"h",false],[4,0,2,"v",false],[3,3,2,"v",false],[1,0,3,"h",false],[3,0,2,"h",false],[0,1,2,"h",false],[4,4,2,"v",false],[3,5,2,"v",false]],par:24,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[4,3,2,"v",false],[1,1,3,"h",false],[4,4,2,"h",false],[3,0,2,"v",false],[0,4,2,"v",false],[0,1,3,"h",false],[2,3,2,"v",false],[5,0,2,"h",false]],par:25,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,2,"v",false],[1,5,2,"v",false],[4,1,2,"v",false],[0,2,3,"h",false],[1,4,3,"v",false],[5,4,2,"h",false],[4,2,2,"h",false],[3,5,2,"v",false],[0,0,2,"v",false],[1,1,2,"h",false],[3,0,3,"v",false]],par:25,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[1,3,3,"v",false],[4,0,2,"v",false],[0,3,2,"h",false],[2,4,2,"v",false],[5,2,3,"h",false],[3,1,2,"h",false],[3,5,2,"v",false],[1,0,2,"h",false],[0,5,2,"v",false],[0,0,3,"h",false],[4,1,2,"h",false]],par:25,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[0,0,3,"h",false],[5,1,3,"h",false],[4,0,2,"v",false],[1,3,2,"h",false],[0,5,2,"v",false],[5,4,2,"h",false],[3,3,2,"v",false],[4,4,2,"h",false],[1,0,3,"h",false]],par:25,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[1,3,2,"v",false],[2,4,2,"v",false],[5,3,2,"h",false],[1,4,2,"h",false],[3,0,2,"v",false],[0,0,3,"h",false],[5,0,2,"h",false],[3,2,2,"h",false],[4,4,2,"h",false],[0,3,2,"h",false]],par:25,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[1,3,2,"v",false],[2,5,2,"v",false],[4,3,3,"h",false],[4,0,2,"v",false],[0,1,3,"h",false],[3,0,2,"h",false],[0,4,3,"v",false],[5,2,2,"h",false],[1,0,3,"h",false],[0,5,2,"v",false],[5,4,2,"h",false]],par:25,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[1,4,2,"v",false],[2,5,3,"v",false],[0,1,3,"h",false],[4,0,2,"v",false],[1,0,2,"h",false],[0,5,2,"v",false],[4,1,2,"h",false],[5,2,3,"h",false],[2,2,2,"v",false],[3,3,2,"h",false],[4,3,2,"h",false]],par:25,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,3,2,"v",false],[2,4,3,"v",false],[2,5,2,"v",false],[5,2,3,"h",false],[4,5,2,"v",false],[3,1,2,"v",false],[0,1,3,"h",false],[0,0,2,"v",false],[3,0,2,"v",false],[4,2,2,"h",false]],par:25,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,3,3,"v",false],[2,4,2,"v",false],[4,2,2,"h",false],[3,0,3,"h",false],[1,5,3,"v",false],[0,2,2,"h",false],[5,1,3,"h",false],[0,4,2,"v",false],[0,0,2,"v",false],[1,2,2,"v",false]],par:25,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[0,3,3,"v",false],[1,4,2,"v",false],[1,5,2,"v",false],[3,5,2,"v",false],[3,0,3,"h",false],[0,1,2,"h",false],[4,1,3,"h",false],[5,1,3,"h",false],[0,0,2,"v",false],[4,4,2,"v",false],[3,3,2,"h",false]],par:26,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,4,2,"v",false],[0,5,2,"v",false],[4,3,2,"v",false],[5,4,2,"h",false],[5,1,2,"h",false],[0,0,3,"h",false],[2,5,3,"v",false],[3,2,2,"h",false],[3,0,2,"v",false],[0,3,2,"h",false],[4,1,2,"h",false]],par:26,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[0,4,3,"v",false],[1,5,2,"v",false],[2,3,3,"v",false],[4,1,2,"h",false],[0,1,3,"h",false],[1,2,2,"h",false],[3,4,2,"h",false],[4,5,2,"v",false],[3,0,2,"v",false],[0,0,2,"v",false]],par:26,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,3,2,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[0,0,2,"v",false],[4,5,2,"v",false],[4,0,3,"h",false],[5,0,2,"h",false],[4,3,2,"v",false],[1,4,2,"h",false],[0,1,2,"h",false],[3,1,2,"h",false]],par:26,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,4,2,"v",false],[1,5,2,"v",false],[4,4,2,"v",false],[5,0,3,"h",false],[4,0,3,"h",false],[0,1,2,"h",false],[0,3,3,"v",false],[0,0,2,"v",false],[3,0,3,"h",false],[1,2,2,"v",false]],par:26,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[2,5,2,"v",false],[5,2,2,"h",false],[0,4,3,"v",false],[4,5,2,"v",false],[3,1,2,"v",false],[0,1,3,"h",false],[1,1,2,"h",false],[2,2,2,"v",false],[3,0,2,"v",false],[4,3,2,"h",false],[0,0,2,"v",false]],par:26,d:"Expert"},
+{v:[[2,1,2,"h",true],[0,3,3,"v",false],[2,4,2,"v",false],[2,5,2,"v",false],[0,0,2,"v",false],[0,2,2,"v",false],[4,1,3,"h",false],[5,0,3,"h",false],[3,0,2,"h",false],[1,4,2,"h",false],[4,4,2,"v",false]],par:27,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,3,2,"v",false],[2,5,2,"v",false],[5,3,2,"h",false],[0,3,2,"v",false],[1,4,2,"h",false],[4,1,3,"h",false],[3,0,2,"v",false],[4,5,2,"v",false]],par:27,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[1,4,2,"v",false],[2,5,2,"v",false],[1,0,2,"h",false],[3,3,2,"h",false],[0,2,3,"h",false],[4,1,2,"v",false],[3,2,2,"v",false],[4,4,2,"h",false],[0,5,2,"v",false],[5,2,3,"h",false],[3,0,2,"v",false]],par:27,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[1,3,2,"v",false],[1,5,2,"v",false],[0,1,2,"h",false],[5,0,2,"h",false],[1,4,3,"v",false],[0,4,2,"h",false],[3,2,2,"h",false],[4,5,2,"v",false],[4,1,3,"h",false],[5,3,2,"h",false],[0,0,2,"v",false]],par:27,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,3,2,"v",false],[1,4,2,"v",false],[0,4,2,"h",false],[0,1,2,"h",false],[2,2,3,"v",false],[2,5,3,"v",false],[4,0,2,"v",false],[1,1,3,"h",false],[5,3,3,"h",false],[3,1,2,"v",false],[4,3,2,"h",false],[5,1,2,"h",false]],par:27,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,3,2,"v",false],[2,4,3,"v",false],[3,0,2,"h",false],[0,3,2,"h",false],[0,0,2,"v",false],[1,2,2,"v",false],[1,5,2,"v",false],[5,2,2,"h",false],[4,0,3,"h",false],[5,4,2,"h",false],[0,1,2,"h",false],[3,5,2,"v",false]],par:27,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[2,3,2,"v",false],[3,0,2,"h",false],[4,1,2,"v",false],[1,4,3,"v",false],[5,2,2,"h",false],[0,5,3,"v",false],[1,0,2,"h",false],[4,2,2,"h",false],[5,4,2,"h",false],[0,1,3,"h",false],[4,0,2,"v",false]],par:27,d:"Expert"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[1,5,3,"v",false],[5,1,3,"h",false],[0,4,2,"h",false],[2,4,2,"v",false],[0,3,2,"v",false],[4,2,2,"h",false],[3,0,2,"h",false],[4,0,2,"v",false],[2,3,2,"v",false]],par:27,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[2,3,2,"v",false],[2,4,2,"v",false],[0,3,2,"v",false],[4,1,3,"h",false],[5,2,2,"h",false],[4,4,2,"v",false],[4,0,2,"v",false],[1,5,3,"v",false],[0,4,2,"h",false]],par:27,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[1,3,2,"v",false],[2,5,2,"v",false],[1,4,3,"v",false],[4,2,2,"h",false],[3,2,2,"h",false],[4,0,2,"v",false],[4,5,2,"v",false],[4,1,2,"v",false],[0,1,3,"h",false],[5,2,2,"h",false],[0,0,2,"v",false]],par:28,d:"Expert"},
+{v:[[2,0,2,"h",true],[1,2,2,"v",false],[1,3,2,"v",false],[0,0,3,"h",false],[4,5,2,"v",false],[3,1,2,"v",false],[5,2,2,"h",false],[0,4,2,"v",false],[3,3,3,"h",false],[3,0,2,"v",false],[4,3,2,"h",false],[3,2,2,"v",false]],par:28,d:"Expert"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[2,5,2,"v",false],[5,1,3,"h",false],[3,4,2,"v",false],[4,1,2,"h",false],[1,3,3,"h",false],[3,0,2,"v",false],[3,3,2,"v",false],[0,4,2,"h",false],[0,0,2,"h",false],[4,5,2,"v",false]],par:30,d:"Expert"},
+{v:[[2,0,2,"h",true],[0,2,3,"v",false],[2,3,2,"v",false],[1,5,2,"v",false],[3,5,2,"v",false],[4,2,2,"h",false],[3,1,2,"h",false],[4,0,2,"v",false],[3,4,2,"v",false],[0,3,2,"v",false],[5,1,3,"h",false],[0,4,2,"h",false]],par:31,d:"Expert"},
+{v:[[2,0,2,"h",true],[2,2,2,"v",false],[0,3,3,"v",false],[1,5,2,"v",false],[4,2,2,"h",false],[0,0,3,"h",false],[3,5,3,"v",false],[4,4,2,"v",false],[5,1,3,"h",false],[3,0,2,"v",false],[0,4,2,"h",false],[3,3,2,"h",false]],par:34,d:"Expert"}
+];
 
-  // --- Progress (localStorage) ---
-  const STORAGE_KEY = 'rush_hour_progress';
-  function loadProgress() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
-  }
-  function saveCompleted(idx) {
-    const p = loadProgress();
-    p[idx] = true;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-  }
-  function isCompleted(idx) { return !!loadProgress()[idx]; }
+  // Progress functions are defined at module scope (above the IIFE)
 
   // --- Level Select ---
   function buildLevelSelect() {
@@ -681,7 +1823,16 @@
         const cell = document.createElement('button');
         cell.className = 'level-cell';
         cell.textContent = idx + 1;
-        if (isCompleted(idx)) cell.classList.add('completed');
+        if (isCompleted(idx)) {
+          cell.classList.add('completed');
+          const s = getLevelScore(idx);
+          if (s > 0) {
+            const scoreSpan = document.createElement('div');
+            scoreSpan.className = 'cell-score';
+            scoreSpan.textContent = s;
+            cell.appendChild(scoreSpan);
+          }
+        }
 
         cell.addEventListener('click', () => { showGame(idx); });
         grid.appendChild(cell);
@@ -694,18 +1845,40 @@
 
   function showSelect() {
     buildLevelSelect();
-    welcomeScreen.classList.remove('active');
-    gameScreen.classList.remove('active');
-    selectScreen.classList.add('active');
-    stopDemo();
+    showScreenOnly(selectScreen);
+    updateProfileButton();
+    updateTotalScoreDisplay();
   }
 
   function showGame(idx) {
-    welcomeScreen.classList.remove('active');
-    selectScreen.classList.remove('active');
-    gameScreen.classList.add('active');
-    stopDemo();
+    showScreenOnly(gameScreen);
     loadLevel(idx);
+  }
+
+  // --- Scoring ---
+  const DIFF_POINTS = { Beginner: 100, Intermediate: 250, Advanced: 500, Expert: 1000 };
+  let levelHints = 0;
+  let levelSolved = false;
+  let levelMoves = 0;
+  let levelResets = 0;
+
+  function resetLevelTracking() {
+    levelHints = 0;
+    levelSolved = false;
+    levelMoves = 0;
+    levelResets = 0;
+  }
+
+  function calculateScore(levelIdx) {
+    if (levelSolved) return 0;
+    const level = LEVELS[levelIdx];
+    const base = DIFF_POINTS[level.d] || 100;
+    let score = base;
+    if (levelResets === 0 && levelHints === 0) score += Math.round(base * 0.5);
+    if (levelMoves <= level.par) score += Math.round(base * 0.25);
+    const hintPenalty = Math.min(levelHints * Math.round(base * 0.2), base);
+    score = Math.max(0, score - hintPenalty);
+    return score;
   }
 
   // --- Game ---
@@ -716,6 +1889,15 @@
   function clearHintUI() {
     document.querySelectorAll('.hint-highlight').forEach(el => el.classList.remove('hint-highlight'));
     document.querySelectorAll('.hint-arrow').forEach(el => el.remove());
+  }
+
+  function updateExitMarker() {
+    const marker = document.querySelector('.exit-marker');
+    if (marker) {
+      const framePadTop = window.innerWidth <= 480 ? 8 : 12;
+      marker.style.top = (framePadTop + 2 * CELL) + 'px';
+      marker.style.height = CELL + 'px';
+    }
   }
 
   function buildGrid() {
@@ -730,10 +1912,12 @@
       v.style.left = (i * CELL) + 'px';
       board.appendChild(v);
     }
+    updateExitMarker();
   }
 
   function loadLevel(index) {
     currentLevel = index;
+    resetLevelTracking();
     clearHintUI();
     if (solveAnimation) { clearInterval(solveAnimation); solveAnimation = null; }
     winOverlay.classList.remove('visible');
@@ -808,6 +1992,8 @@
     return grid;
   }
 
+  board.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
+
   function startDrag(e, veh) {
     e.preventDefault();
     const grid = getOccupied(veh);
@@ -848,6 +2034,10 @@
     const snapped = Math.round(pos / CELL) * CELL;
     if (veh.orient === 'h') veh.col = snapped / CELL;
     else veh.row = snapped / CELL;
+    const moved = veh.orient === 'h'
+      ? (snapped / CELL) !== (startPos / CELL)
+      : (snapped / CELL) !== (startPos / CELL);
+    if (moved) levelMoves++;
     positionVehicle(veh);
     veh.el.classList.remove('dragging');
     veh.el.removeEventListener('pointermove', onDrag);
@@ -860,9 +2050,27 @@
   function checkWin() {
     const target = vehicles.find(v => v.isTarget);
     if (!target || target.col + target.size < GRID) return;
-    saveCompleted(currentLevel);
+    const score = calculateScore(currentLevel);
+    saveCompleted(currentLevel, score);
     const isLast = currentLevel + 1 >= LEVELS.length;
+
+    const level = LEVELS[currentLevel];
+    let details = '';
+    if (levelSolved) {
+      details = 'Auto-solved — no points earned';
+    } else {
+      details = `+${score} pts`;
+      const parts = [];
+      if (levelResets === 0 && levelHints === 0) parts.push('First try bonus!');
+      if (levelMoves <= level.par) parts.push('Under par!');
+      if (levelHints > 0) parts.push(levelHints + ' hint' + (levelHints > 1 ? 's' : '') + ' used');
+      if (parts.length) details += ' · ' + parts.join(' · ');
+    }
+
     winSubtitle.textContent = isLast ? 'You beat all levels!' : `Level ${currentLevel + 1} complete`;
+    const scoreEl = document.getElementById('winScore');
+    if (scoreEl) scoreEl.textContent = details;
+
     nextBtn.textContent = isLast ? 'Play Again' : 'Next Level';
     setTimeout(() => winOverlay.classList.add('visible'), 200);
   }
@@ -913,6 +2121,7 @@
     if (solveAnimation) { clearInterval(solveAnimation); solveAnimation = null; }
     const solution = solveCurrent();
     if (!solution || !solution.length) return;
+    levelHints++;
     const step = solution[0];
     const veh = vehicles[step.idx];
     veh.el.classList.add('hint-highlight');
@@ -936,6 +2145,7 @@
     if (solveAnimation) { clearInterval(solveAnimation); solveAnimation = null; }
     const solution = solveCurrent();
     if (!solution || !solution.length) return;
+    levelSolved = true;
     let i = 0;
     solveBtn.disabled = true;
     hintBtn.disabled = true;
@@ -976,16 +2186,22 @@
     clearHintUI();
     solveBtn.disabled = false;
     hintBtn.disabled = false;
+    const prevResets = levelResets;
     loadLevel(currentLevel);
+    levelResets = prevResets + 1;
   });
 
   // --- Welcome Screen Demo ---
   const demoBoard = document.getElementById('demoBoard');
-  const DC = 40; // demo cell size
   let demoInterval = null;
+
+  function getDemoCellSize() {
+    return demoBoard.offsetWidth / 6;
+  }
 
   function initDemo() {
     demoBoard.textContent = '';
+    const DC = getDemoCellSize();
     for (let i = 1; i < 6; i++) {
       const h = document.createElement('div');
       h.className = 'demo-gridline-h'; h.style.top = (i * DC) + 'px';
@@ -996,6 +2212,8 @@
     }
     const exit = document.createElement('div');
     exit.className = 'demo-exit';
+    exit.style.top = (2 * DC) + 'px';
+    exit.style.height = DC + 'px';
     demoBoard.appendChild(exit);
 
     const demoCars = [
@@ -1035,20 +2253,21 @@
 
     let step = 0;
     demoInterval = setInterval(() => {
+      const dc = getDemoCellSize();
       if (step >= moves.length) {
         step = 0;
         els.forEach((c, i) => {
           c.row = demoCars[i].row; c.col = demoCars[i].col;
-          c.el.style.left = c.col * DC + 2 + 'px';
-          c.el.style.top = c.row * DC + 2 + 'px';
+          c.el.style.left = c.col * dc + 2 + 'px';
+          c.el.style.top = c.row * dc + 2 + 'px';
         });
         return;
       }
       const m = moves[step];
       const car = els[m.idx];
       car.row = m.row; car.col = m.col;
-      car.el.style.left = car.col * DC + 2 + 'px';
-      car.el.style.top = car.row * DC + 2 + 'px';
+      car.el.style.left = car.col * dc + 2 + 'px';
+      car.el.style.top = car.row * dc + 2 + 'px';
       step++;
     }, 1200);
   }
@@ -1074,11 +2293,35 @@
     }
   })();
 
-  document.getElementById('playBtn').addEventListener('click', showSelect);
+  document.getElementById('playBtn').addEventListener('click', () => {
+    if (currentUser) {
+      showSelect();
+    } else {
+      showScreenOnly(authScreen);
+    }
+  });
   initDemo();
 
+  computeCellSize();
   buildGrid();
   buildLevelSelect();
+
+  window.addEventListener('resize', () => {
+    computeCellSize();
+    buildGrid();
+    vehicles.forEach(positionVehicle);
+    updateExitMarker();
+  });
+
+  if (window.Capacitor && window.Capacitor.Plugins) {
+    const { SplashScreen, StatusBar } = window.Capacitor.Plugins;
+    if (SplashScreen) SplashScreen.hide();
+    if (StatusBar) {
+      StatusBar.setStyle({ style: 'DARK' });
+    }
+  }
+
+  window._game = { buildLevelSelect, stopDemo, showSelect, showGame };
 })();
 </script>
 </body>

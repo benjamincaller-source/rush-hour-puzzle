@@ -1,0 +1,36 @@
+{
+  "name": "rush-hour-puzzle",
+  "version": "1.0.0",
+  "description": "A browser-based sliding block puzzle inspired by the classic Rush Hour board game. Free the red car by moving blocking vehicles out of the way.",
+  "main": "index.js",
+  "scripts": {
+    "build": "cp index.html www/index.html",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:open": "npx cap open ios",
+    "cap:run": "npx cap run ios"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benjamincaller-source/rush-hour-puzzle.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/benjamincaller-source/rush-hour-puzzle/issues"
+  },
+  "homepage": "https://github.com/benjamincaller-source/rush-hour-puzzle#readme",
+  "devDependencies": {
+    "puppeteer": "^24.41.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
+    "canvas": "^3.2.3"
+  }
+}
