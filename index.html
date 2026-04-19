@@ -1018,6 +1018,11 @@ try {
   console.warn('Firebase not configured:', e.message);
 }
 
+if (!firebaseReady) {
+  document.getElementById('openProfileBtn').style.display = 'none';
+  document.getElementById('openLbBtn').style.display = 'none';
+}
+
 async function submitScoreToLeaderboard() {
   if (!firebaseReady || !db || !currentUser) return;
   try {
@@ -2294,7 +2299,7 @@ const levelSections = document.getElementById('levelSections');
   })();
 
   document.getElementById('playBtn').addEventListener('click', () => {
-    if (currentUser) {
+    if (currentUser || !firebaseReady) {
       showSelect();
     } else {
       showScreenOnly(authScreen);
